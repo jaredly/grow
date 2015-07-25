@@ -17,6 +17,9 @@ const r = .1;
 const MAXLEN = .05;
 const NORM_LENGTH = .03;
 
+const CLOSE = .05;
+const TOLERANCE = .0001;
+
 function setup() {
   const ln = 50;
   for (var i=0; i<ln; i++) {
@@ -30,14 +33,6 @@ function setup() {
     }
   }
   growlengths.push(dist(ln-1, 0));
-}
-
-function drawPointsTo(n) {
-  ctx.clearRect(0, 0, half*2, half*2);
-  ctx.fillStyle = 'red';
-  for (var i=0; i<n; i++) {
-    ctx.fillRect(half + xs[i]*half, half + ys[i]*half, 2, 2);
-  }
 }
 
 function drawPoints() {
@@ -65,82 +60,11 @@ function draw() {
   ctx.stroke();
 }
 
-function drawTo(n) {
-  ctx.clearRect(0, 0, half*2, half*2);
-  ctx.beginPath();
-  ctx.moveTo(half + xs[0]*half, half + ys[0]*half);
-  for (var i=0; i<n; i++) {
-    ctx.lineTo(half + xs[i]*half, half + ys[i]*half);
-    // ctx.fillRect(half + xs[i]*half, half + ys[i]*half, 2, 2);
-  }
-  ctx.lineTo(half + xs[0]*half, half + ys[0]*half);
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'red';
-  ctx.stroke();
-}
-
 function dist(a, b) {
   const dx = xs[b] - xs[a];
   const dy = ys[b] - ys[a];
   return Math.sqrt(dx*dx + dy*dy);
 }
-
-function newPt(a) {
-  let b;
-  if (a === xs.length - 1) {
-    b = 0;
-  } else {
-    b = a + 1;
-  }
-  const dx = xs[b] - xs[a];
-  const dy = ys[b] - ys[a];
-  xs.splice(b, 0, xs[a] + dx/2);
-  ys.splice(b, 0, ys[a] + dy/2);
-}
-
-function maybeAdd() {
-  // let biggest = xs.length - 1;
-  // let blen = dist(xs.length - 1, 0);
-  for (let i=0; i<xs.length - 1; i++) {
-    let len = dist(i, i + 1);
-    if (len > .06) {
-      newPt(i, len);
-    }
-    /*
-    if (len > blen) {
-      blen = len;
-      biggest = i;
-    }
-    console.log(blen);
-    */
-  }
-}
-
-function push(a, b) {
-  const dx = xs[b] > xs[a] ? .001 : -.001;
-  const dy = ys[b] > ys[a] ? .001 : -.001;
-  // const dx = .002 * (1 - (xs[b] - xs[a]) / .05);
-  // const dy = .002 * (1 - (ys[b] - ys[a]) / .05);
-  xs[a] -= dx;
-  ys[a] -= dy;
-  xs[b] += dx;
-  ys[b] += dy;
-}
-
-function moveAway() {
-  for (let i=0; i<xs.length; i++) {
-    for (let j=0; j<xs.length; j++) {
-      if (j === i) continue;
-      const d = dist(i, j);
-      if (d < .05) {
-        push(i, j);
-      }
-    }
-  }
-}
-
-const CLOSE = .05;
-const TOLERANCE = .0001;
 
 function moveThings() {
   let nx = new Array(xs.length);
@@ -172,8 +96,8 @@ function moveThings() {
       let d = Math.sqrt(xx*xx+yy*yy);
       if (Math.abs(d - growlengths[p]) > TOLERANCE) {
         let a = Math.atan2(yy, xx);
-        dx -= Math.cos(a) * (lengths[p] - d) / 10;
-        dy -= Math.sin(a) * (lengths[p] - d) / 10;
+        dx -= Math.cos(a) * Math.pow((lengths[p] - d), 3);
+        dy -= Math.sin(a) * Math.pow((lengths[p] - d), 3);
       }
     }
     {
@@ -183,16 +107,16 @@ function moveThings() {
       lengths[i] = d;
       if (Math.abs(d - growlengths[i]) > TOLERANCE) {
         let a = Math.atan2(yy, xx);
-        dx -= Math.cos(a) * (lengths[n] - d) / 10;
-        dy -= Math.sin(a) * (lengths[n] - d) / 10;
+        dx -= Math.cos(a) * Math.pow((lengths[n] - d), 3);
+        dy -= Math.sin(a) * Math.pow((lengths[n] - d), 3);
       }
     }
 
     if (isNaN(dx) || isNaN(dy)) {
       debugger;
     }
-    nx[i] = xs[i] + dx;
-    ny[i] = ys[i] + dy;
+    nx[i] = xs[i] + dx * .8;
+    ny[i] = ys[i] + dy * .8;
   }
   xs = nx;
   ys = ny;
@@ -204,7 +128,10 @@ function expandThings() {
   let last = xs.length - 1;
   let theta = Math.atan2(ys[0] - ys[last], xs[0] - xs[last]);
   for (let i=1; i<xs.length; i++) {
-    let ntheta = Math.atan2(ys[i] - ys[i-1], xs[i] - xs[i-1]);
+    let xx = xs[i] - xs[i - 1];
+    let yy = ys[i] - ys[i - 1];
+
+    let ntheta = Math.atan2(yy, xx);
     if (Math.abs(theta - ntheta) > ANGTOL &&
         Math.abs(lengths[i - 1] - growlengths[i - 1]) <= TOLERANCE) {
       // console.log(theta / Math.PI * 180, ntheta / Math.PI * 180);
@@ -213,6 +140,11 @@ function expandThings() {
     } else {
       grown[i] = false;
     }
+    // const x = half + xs[i - 1]*half*mx
+    // const y = half + ys[i - 1]*half*mx
+    // const a1 = parseInt(theta / Math.PI * 180);
+    // const a2 = parseInt(ntheta / Math.PI * 180);
+    // ctx.fillText(a1 + ',' + a2, x, y);
     theta = ntheta;
   }
 }
@@ -235,11 +167,8 @@ function tick() {
   moveThings();
   expandThings();
   splitThings();
-  // maybeAdd();
-  // moveAway();
   draw();
   drawPoints();
-  // POINTS ? drawPoints() : draw();
 }
 
 function run(n) {
