@@ -17,7 +17,7 @@ let vy = [];
 let edges = [];
 let edgelen = [];
 
-var ipts = 6;
+var ipts = 10;
 
 for (var i=0; i<ipts; i++) {
   x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
@@ -101,7 +101,6 @@ function step() {
 
 function edgegrow() {
   for (var i=0; i<edgelen.length; i++) {
-    if (edges[i][0]%3 == 0) continue;
     edgelen[i] += .0003;
   }
 }
@@ -200,5 +199,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(2000);
+  run(500);
 }, 500);
