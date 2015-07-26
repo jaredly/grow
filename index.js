@@ -219,14 +219,21 @@ function splitn(i, n) {
   edges[i][1] = ni;
 }
 
+var snum = 6;
+
 function edgesplit() {
   var olen = edgelen.length;
+  var changed = false;
   // all new edges are added to the end, and we don't need to traverse them
   for (var i=0; i<olen; i++) {
     if (edgelen[i] < .1) {
       continue;
     }
-    splitn(i, 5);
+    if (!changed && snum > 2) {
+      snum -= 1;
+    }
+    changed = true;
+    splitn(i, snum);
   }
 }
 
