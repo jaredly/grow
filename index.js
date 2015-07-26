@@ -17,7 +17,7 @@ let vy = [];
 let edges = [];
 let edgelen = [];
 
-var ipts = 3;
+var ipts = 4;
 
 for (var i=0; i<ipts; i++) {
   x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
@@ -39,7 +39,7 @@ for (var i=0; i<ipts; i++) {
   */
 }
 
-function px_(x) {return half + x*half*4}
+function px_(x) {return half + x*half*2}
 
 function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
@@ -101,20 +101,27 @@ function step() {
 
 function edgegrow() {
   for (var i=0; i<edgelen.length; i++) {
+    if (edges[i][0]%2 == 0) continue;
     edgelen[i] += .0003;
   }
 }
 
 function splitn(i, n) {
-  edgelen[i] /= n;
-  for (var z=0; z<n-1; z++) {
-    edgelen.push(edgelen[i]);
-  }
   let a = edges[i][0];
   let b = edges[i][1];
   let dx = x[b] - x[a];
   let dy = y[b] - y[a];
+  /*
+  var dcenter = Math.sqrt(dx*dx + dy*dy);
+  if (dcenter > .15) {
+    return;
+  }
+  */
   let ni = x.length;
+  edgelen[i] /= n;
+  for (var z=0; z<n-1; z++) {
+    edgelen.push(edgelen[i]);
+  }
   for (var z=1; z<n; z++) {
     x.push(x[a] + z * dx/n);
     y.push(y[a] + z * dy/n);
@@ -124,8 +131,8 @@ function splitn(i, n) {
   for (var z=0; z<n-2; z++) {
     edges.push([ni + z, ni + z + 1]);
   }
-  edgelen.push(edgelen[i] * 1);
-  edges.push([edges[i][0], edges[i][1]]);
+  // edgelen.push(edgelen[i] * 0.8);
+  // edges.push([edges[i][0], edges[i][1]]);
   edges.push([ni + n-2, edges[i][1]]);
   edges[i][1] = ni;
 }
@@ -147,7 +154,7 @@ function edgesplit() {
     }
     changed = true;
     */
-    splitn(i, 2);
+    splitn(i, 3);
   }
 }
 
@@ -193,5 +200,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(940);
+  run(2000);
 }, 500);
