@@ -27,9 +27,9 @@ for (var i=0; i<10; i++) {
 for (var i=0; i<10; i++) {
   edges.push([i, (i+1) % 10]);
   edgelen.push(.05);
-  /*
   edges.push([i, (i+2) % 10]);
   edgelen.push(.4);
+  /*
   edges.push([i, (i+3) % 10]);
   edgelen.push(.6);
   edges.push([i, (i+4) % 10]);
@@ -219,7 +219,7 @@ function splitn(i, n) {
   edges[i][1] = ni;
 }
 
-var snum = 7;
+var snum = 2;
 
 function edgesplit() {
   var olen = edgelen.length;
