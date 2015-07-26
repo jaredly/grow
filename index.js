@@ -14,6 +14,8 @@ let y = [];
 let vx = [];
 let vy = [];
 
+let nclose = [];
+
 let edges = [];
 let edgelen = [];
 let curlen = [];
@@ -26,6 +28,7 @@ for (var i=0; i<ipts; i++) {
   y.push(Math.sin(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
   vx.push(0);
   vy.push(0);
+  nclose.push(0);
 }
 
 for (var i=0; i<ipts; i++) {
@@ -66,7 +69,7 @@ function push(a, b, min) {
   let dy = y[b] - y[a];
   let dist = Math.sqrt(dx*dx + dy*dy);
   if (dist >= min) {
-    return;
+    return false;
   }
   let theta = Math.atan2(dy, dx);
   let mag = (min - dist) / 2;
@@ -76,6 +79,7 @@ function push(a, b, min) {
   vy[b] = vy[b] - -k * ay / 2;
   vx[a] = vx[a] + -k * ax / 2;
   vy[a] = vy[a] + -k * ay / 2;
+  return true;
 }
 
 function match(a, b, length) {
@@ -114,23 +118,27 @@ function move() {
 
 function step() {
   adjust();
-  move();
+  pushAway();
   edgegrow();
   edgesplit();
-  pushAway();
+  move();
 }
 
 function pushAway() {
   for (var i=0; i<x.length; i++) {
     let connected = {};
+    let close = 0;
     for (var e=0; e<edges.length; e++) {
       if (edges[e][0] === i) connected[edges[e][1]] = true;
       else if (edges[e][1] === i) connected[edges[e][0]] = true;
     }
     for (var j=0; j<x.length; j++) {
       if (j === i || connected[j]) continue;
-      push(i, j, .1);
+      if (push(i, j, .1)) {
+        close += 1;
+      }
     }
+    nclose[i] = Math.max(close, nclose[i]);
   }
 }
 
@@ -155,9 +163,13 @@ function edgegrow() {
   }
   var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
-    if (age[i] < 100 && edst[i] >= emax * .9) {
-      edgelen[i] += .0008;
+    if (age[i] > 100) continue;
+    if (nclose[edges[i][0]] > 2 && nclose[edges[i][1]] > 2) {
+      continue;
     }
+    //if (age[i] < 100 && edst[i] >= emax * .9) {
+      edgelen[i] += .0008;
+    //}
   }
 }
 
@@ -178,6 +190,7 @@ function splitn(i, n) {
     y.push(y[a] + z * dy/n);
     vx.push(0);
     vy.push(0);
+    nclose.push(0);
   }
   for (var z=0; z<n-2; z++) {
     edges.push([ni + z, ni + z + 1]);
@@ -188,23 +201,13 @@ function splitn(i, n) {
   edges[i][1] = ni;
 }
 
-//var snum = 2;
-
 function edgesplit() {
   var olen = edgelen.length;
-  var changed = false;
   // all new edges are added to the end, and we don't need to traverse them
   for (var i=0; i<olen; i++) {
     if (curlen[i] < .1 || edgelen[i] < .1) {
       continue;
     }
-    /*
-    if (!changed && snum > 2) {
-      console.log('down');
-      snum -= 1;
-    }
-    changed = true;
-    */
     splitn(i, 2);
   }
 }
