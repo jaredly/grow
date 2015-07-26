@@ -219,7 +219,7 @@ function splitn(i, n) {
   edges[i][1] = ni;
 }
 
-var snum = 6;
+var snum = 7;
 
 function edgesplit() {
   var olen = edgelen.length;
@@ -230,6 +230,7 @@ function edgesplit() {
       continue;
     }
     if (!changed && snum > 2) {
+      console.log('down');
       snum -= 1;
     }
     changed = true;
@@ -279,5 +280,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(500);
+  run(680);
 }, 500);
