@@ -15,20 +15,23 @@ let vx = [];
 let vy = [];
 
 let nclose = [];
+let dead = [];
+// next idea: dead is "hasn't moved more than x pixels from t-10 spot.
 
 let edges = [];
 let edgelen = [];
 let curlen = [];
 let age = [];
 
-var ipts = 5;
+var ipts = 10;
 
 for (var i=0; i<ipts; i++) {
-  x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
-  y.push(Math.sin(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
+  x.push(Math.cos(Math.PI/ipts*2*i) * .4) // * (.2 + Math.random()*.1));
+  y.push(Math.sin(Math.PI/ipts*2*i) * .4) // * (.2 + Math.random()*.1));
   vx.push(0);
   vy.push(0);
   nclose.push(0);
+  dead.push(0);
 }
 
 for (var i=0; i<ipts; i++) {
@@ -109,8 +112,17 @@ function adjust() {
 
 function move() {
   for (var i=0; i<x.length; i++) {
+    if (dead[i] > 35) {
+      continue;
+    }
     vx[i] *= DAMP;
     vy[i] *= DAMP;
+    var mm = .00001;
+    if (vx[i] < mm && vy[i] < mm) {
+      dead[i] += 1;
+    } else {
+      dead[i] = 0;
+    }
     x[i] += vx[i];
     y[i] += vy[i];
   }
@@ -134,7 +146,7 @@ function pushAway() {
     }
     for (var j=0; j<x.length; j++) {
       if (j === i || connected[j]) continue;
-      if (push(i, j, .1)) {
+      if (push(i, j, .15)) {
         close += 1;
       }
     }
@@ -164,9 +176,11 @@ function edgegrow() {
   var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
     if (age[i] > 100) continue;
-    if (nclose[edges[i][0]] > 2 && nclose[edges[i][1]] > 2) {
+    /*
+    if (nclose[edges[i][0]] > 6 && nclose[edges[i][1]] > 6) {
       continue;
     }
+    */
     //if (age[i] < 100 && edst[i] >= emax * .9) {
       edgelen[i] += .0008;
     //}
@@ -191,6 +205,7 @@ function splitn(i, n) {
     vx.push(0);
     vy.push(0);
     nclose.push(0);
+    dead.push(0);
   }
   for (var z=0; z<n-2; z++) {
     edges.push([ni + z, ni + z + 1]);
