@@ -7,8 +7,8 @@ const half = 400;
 const mx = 4;
 const TOLERANCE = .001;
 const m = 10;
-const DAMP = 0.95;
-const k = 0.05;
+const DAMP = 0.89;
+const k = 0.1;
 
 let x = [];
 let y = [];
@@ -20,22 +20,24 @@ let edges = [];
 let edgelen = [];
 
 for (var i=0; i<10; i++) {
-  x.push(Math.random() - .5);
-  y.push(Math.random() - .5);
+  x.push(Math.cos(Math.PI/5*i) * (.4 + Math.random()*.1));
+  y.push(Math.sin(Math.PI/5*i) * (.4 + Math.random()*.1));
   vx.push(0);
   vy.push(0);
 }
 
-for (var i=0; i<9; i++) {
-  edges.push([i, i+1]);
+for (var i=0; i<10; i++) {
+  edges.push([i, (i+1) % 10]);
   edgelen.push(.1);
+  edges.push([i, (i+2) % 10]);
+  edgelen.push(.4);
+  edges.push([i, (i+3) % 10]);
+  edgelen.push(.6);
+  edges.push([i, (i+4) % 10]);
+  edgelen.push(.7);
 }
 
-for (var i=1; i<8; i+=2) {
-  edges.push([i, i+2]);
-  edgelen.push(.1);
-}
-
+/*
 for (var i=0; i<8; i+=2) {
   edges.push([i, i+2]);
   edgelen.push(.1);
@@ -45,6 +47,7 @@ for (var i=0; i<7; i+=1) {
   edges.push([i,i+3]);
   edgelen.push(Math.sqrt(3)*.05*2);
 }
+*/
 
 /*
 edges.push([0,2]);
@@ -127,6 +130,19 @@ function move() {
 function step() {
   adjust();
   move();
+  grav();
+}
+
+let gx = .001;
+
+function grav() {
+  for (var i=0; i<x.length; i++) {
+    vy[i] += gx;
+    if (y[i] >= 1) {
+      y[i] = 1;
+      vy[i] = 0;
+    }
+  }
 }
 
 function step_() {
@@ -158,3 +174,6 @@ function run(n) {
 }
 
 draw();
+setTimeout(function () {
+  run(1000);
+}, 500);
