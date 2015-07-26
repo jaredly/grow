@@ -42,7 +42,7 @@ for (var i=0; i<ipts; i++) {
   */
 }
 
-function px_(x) {return half + x*half*.5}
+function px_(x) {return half + x*half*.3}
 
 function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
@@ -155,7 +155,7 @@ function edgegrow() {
   }
   var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
-    if (age[i] < 100 && edst[i] >= emax * .75) {
+    if (age[i] < 100 && edst[i] >= emax * .9) {
       edgelen[i] += .0008;
     }
   }
@@ -224,5 +224,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(1000);
+  run(2000);
 }, 500);
