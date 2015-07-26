@@ -100,7 +100,7 @@ function step() {
 
 function edgegrow() {
   for (var i=0; i<edgelen.length; i++) {
-    edgelen[i] += .0005;
+    edgelen[i] += .001;
   }
 }
 
@@ -173,6 +173,52 @@ function split4(i) {
   edges[i][1] = ni;
 }
 
+function split4n(i) {
+  edgelen[i] /= 4;
+  for (var z=0; z<3; z++) {
+    edgelen.push(edgelen[i]);
+  }
+  let a = edges[i][0];
+  let b = edges[i][1];
+  let dx = x[b] - x[a];
+  let dy = y[b] - y[a];
+  let ni = x.length;
+  for (var z=1; z<4; z++) {
+    x.push(x[a] + z * dx/4);
+    y.push(y[a] + z * dy/4);
+    vx.push(0);
+    vy.push(0);
+  }
+  for (var z=0; z<2; z++) {
+    edges.push([ni + z, ni + z + 1]);
+  }
+  edges.push([ni + 2, edges[i][1]]);
+  edges[i][1] = ni;
+}
+
+function splitn(i, n) {
+  edgelen[i] /= n;
+  for (var z=0; z<n-2; z++) {
+    edgelen.push(edgelen[i]);
+  }
+  let a = edges[i][0];
+  let b = edges[i][1];
+  let dx = x[b] - x[a];
+  let dy = y[b] - y[a];
+  let ni = x.length;
+  for (var z=1; z<n; z++) {
+    x.push(x[a] + z * dx/n);
+    y.push(y[a] + z * dy/n);
+    vx.push(0);
+    vy.push(0);
+  }
+  for (var z=0; z<n-2; z++) {
+    edges.push([ni + z, ni + z + 1]);
+  }
+  //edges.push([ni + n-2, edges[i][1]]);
+  edges[i][1] = ni;
+}
+
 function edgesplit() {
   var olen = edgelen.length;
   // all new edges are added to the end, and we don't need to traverse them
@@ -180,7 +226,7 @@ function edgesplit() {
     if (edgelen[i] < .1) {
       continue;
     }
-    split4(i);
+    splitn(i, 4);
   }
 }
 
