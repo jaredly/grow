@@ -115,7 +115,7 @@ function step() {
   move();
   edgegrow();
   edgesplit();
-  pushAway();
+  //pushAway();
 }
 
 function pushAway() {
@@ -143,14 +143,14 @@ function edgegrow() {
     let cx = x[a] + dx/2;
     let cy = y[a] + dy/2;
     let dcenter = Math.sqrt(cx*cx + cy*cy);
-    // var rlen = Math.sqrt(dx*dx + dy*dy);
+    curlen[i] = Math.sqrt(dx*dx + dy*dy);
     edst.push(dcenter);
     esum += dcenter;
   }
   var eavg = esum / edgelen.length;
   for (var i=0; i<edgelen.length; i++) {
     if (edst[i] >= eavg) {
-      edgelen[i] += .0003;
+      edgelen[i] += .0008;
     }
   }
 }
@@ -160,12 +160,6 @@ function splitn(i, n) {
   let b = edges[i][1];
   let dx = x[b] - x[a];
   let dy = y[b] - y[a];
-  /*
-  var dcenter = Math.sqrt(dx*dx + dy*dy);
-  if (dcenter > .15) {
-    return;
-  }
-  */
   let ni = x.length;
   edgelen[i] /= n;
   for (var z=0; z<n-1; z++) {
@@ -193,7 +187,7 @@ function edgesplit() {
   var changed = false;
   // all new edges are added to the end, and we don't need to traverse them
   for (var i=0; i<olen; i++) {
-    if (edgelen[i] < .1) {
+    if (curlen[i] < .1 || edgelen[i] < .1) {
       continue;
     }
     /*
@@ -203,7 +197,7 @@ function edgesplit() {
     }
     changed = true;
     */
-    splitn(i, 4);
+    splitn(i, 2);
   }
 }
 
