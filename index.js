@@ -198,7 +198,7 @@ function split4n(i) {
 
 function splitn(i, n) {
   edgelen[i] /= n;
-  for (var z=0; z<n-2; z++) {
+  for (var z=0; z<n-1; z++) {
     edgelen.push(edgelen[i]);
   }
   let a = edges[i][0];
@@ -212,7 +212,7 @@ function splitn(i, n) {
     vx.push(0);
     vy.push(0);
   }
-  for (var z=0; z<n-3; z++) {
+  for (var z=0; z<n-2; z++) {
     edges.push([ni + z, ni + z + 1]);
   }
   edges.push([ni + n-2, edges[i][1]]);
@@ -226,7 +226,7 @@ function edgesplit() {
     if (edgelen[i] < .1) {
       continue;
     }
-    splitn(i, 4);
+    splitn(i, 5);
   }
 }
 
