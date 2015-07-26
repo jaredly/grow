@@ -5,8 +5,8 @@ var ctx = canv.getContext('2d');
 
 const half = 400;
 const TOLERANCE = .001;
-const DAMP = 0.89;
-const k = 0.1;
+const DAMP = 0.95;
+const k = 0.05;
 
 let x = [];
 let y = [];
@@ -97,105 +97,12 @@ function step() {
   move();
   edgegrow();
   edgesplit();
-  // grav();
 }
 
 function edgegrow() {
   for (var i=0; i<edgelen.length; i++) {
-    edgelen[i] += .0005;
+    edgelen[i] += .0003;
   }
-}
-
-function split2(i) {
-  edgelen[i] /= 2;
-  edgelen.push(edgelen[i]);
-  let a = edges[i][0];
-  let b = edges[i][1];
-  let dx = x[b] - x[a];
-  let dy = y[b] - y[a];
-  let ni = x.length;
-  x.push(x[a] + dx/2);
-  y.push(y[a] + dy/2);
-  vx.push(0);
-  vy.push(0);
-  edges.push([ni, edges[i][1]]);
-  edges[i][1] = ni;
-}
-
-function split3(i) {
-  edgelen[i] /= 3;
-  edgelen.push(edgelen[i]);
-  edgelen.push(edgelen[i]);
-  let a = edges[i][0];
-  let b = edges[i][1];
-  let dx = x[b] - x[a];
-  let dy = y[b] - y[a];
-  let ni = x.length;
-  x.push(x[a] + dx/3);
-  y.push(y[a] + dy/3);
-  vx.push(0);
-  vy.push(0);
-  let n2 = x.length;
-  x.push(x[a] + 2*dx/3);
-  y.push(y[a] + 2*dy/3);
-  vx.push(0);
-  vy.push(0);
-  edges.push([ni, n2]);
-  edges.push([n2, edges[i][1]]);
-  edges[i][1] = ni;
-}
-
-function split4(i) {
-  edgelen[i] /= 4;
-  edgelen.push(edgelen[i]);
-  edgelen.push(edgelen[i]);
-  edgelen.push(edgelen[i]);
-  let a = edges[i][0];
-  let b = edges[i][1];
-  let dx = x[b] - x[a];
-  let dy = y[b] - y[a];
-  let ni = x.length;
-  x.push(x[a] + dx/4);
-  y.push(y[a] + dy/4);
-  vx.push(0);
-  vy.push(0);
-  let n2 = x.length;
-  x.push(x[a] + 2*dx/4);
-  y.push(y[a] + 2*dy/4);
-  vx.push(0);
-  vy.push(0);
-  let n3 = x.length;
-  x.push(x[a] + 3*dx/4);
-  y.push(y[a] + 3*dy/4);
-  vx.push(0);
-  vy.push(0);
-  edges.push([ni, n2]);
-  edges.push([n2, n3]);
-  edges.push([n3, edges[i][1]]);
-  edges[i][1] = ni;
-}
-
-function split4n(i) {
-  edgelen[i] /= 4;
-  for (var z=0; z<3; z++) {
-    edgelen.push(edgelen[i]);
-  }
-  let a = edges[i][0];
-  let b = edges[i][1];
-  let dx = x[b] - x[a];
-  let dy = y[b] - y[a];
-  let ni = x.length;
-  for (var z=1; z<4; z++) {
-    x.push(x[a] + z * dx/4);
-    y.push(y[a] + z * dy/4);
-    vx.push(0);
-    vy.push(0);
-  }
-  for (var z=0; z<2; z++) {
-    edges.push([ni + z, ni + z + 1]);
-  }
-  edges.push([ni + 2, edges[i][1]]);
-  edges[i][1] = ni;
 }
 
 function splitn(i, n) {
@@ -240,7 +147,7 @@ function edgesplit() {
     }
     changed = true;
     */
-    splitn(i, 4);
+    splitn(i, 3);
   }
 }
 
@@ -286,5 +193,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(680);
+  run(1200);
 }, 500);
