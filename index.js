@@ -5,7 +5,7 @@ var ctx = canv.getContext('2d');
 
 const half = 400;
 const TOLERANCE = .001;
-const DAMP = 0.95;
+const DAMP = 0.85;
 const k = 0.05;
 
 let x = [];
@@ -17,12 +17,13 @@ let vy = [];
 let edges = [];
 let edgelen = [];
 let curlen = [];
+let age = [];
 
 var ipts = 10;
 
 for (var i=0; i<ipts; i++) {
-  x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
-  y.push(Math.sin(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
+  x.push(Math.cos(Math.PI/ipts*2*i) * .2) // * (.2 + Math.random()*.1));
+  y.push(Math.sin(Math.PI/ipts*2*i) * .2) // * (.2 + Math.random()*.1));
   vx.push(0);
   vy.push(0);
 }
@@ -30,6 +31,7 @@ for (var i=0; i<ipts; i++) {
 for (var i=0; i<ipts; i++) {
   edges.push([i, (i+1) % ipts]);
   edgelen.push(.05);
+  age.push(0);
   /*
   edges.push([i, (i+2) % ipts]);
   edgelen.push(.4);
@@ -115,7 +117,7 @@ function step() {
   move();
   edgegrow();
   edgesplit();
-  //pushAway();
+  pushAway();
 }
 
 function pushAway() {
@@ -149,7 +151,7 @@ function edgegrow() {
   }
   var eavg = esum / edgelen.length;
   for (var i=0; i<edgelen.length; i++) {
-    if (edst[i] >= eavg) {
+    if (age[i] < 100 && edst[i] >= eavg) {
       edgelen[i] += .0008;
     }
   }
@@ -162,8 +164,10 @@ function splitn(i, n) {
   let dy = y[b] - y[a];
   let ni = x.length;
   edgelen[i] /= n;
+  age[i] = 0;
   for (var z=0; z<n-1; z++) {
     edgelen.push(edgelen[i]);
+    age.push(0);
   }
   for (var z=1; z<n; z++) {
     x.push(x[a] + z * dx/n);
@@ -216,5 +220,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(1500);
+  run(800);
 }, 500);
