@@ -4,9 +4,7 @@ var canv = document.querySelector('#canvas');
 var ctx = canv.getContext('2d');
 
 const half = 400;
-const mx = 4;
 const TOLERANCE = .001;
-const m = 10;
 const DAMP = 0.89;
 const k = 0.1;
 
@@ -20,53 +18,34 @@ let edges = [];
 let edgelen = [];
 
 for (var i=0; i<10; i++) {
-  x.push(Math.cos(Math.PI/5*i) * (.4 + Math.random()*.1));
-  y.push(Math.sin(Math.PI/5*i) * (.4 + Math.random()*.1));
+  x.push(Math.cos(Math.PI/5*i) * .1) // * (.2 + Math.random()*.1));
+  y.push(Math.sin(Math.PI/5*i) * .1) // * (.2 + Math.random()*.1));
   vx.push(0);
   vy.push(0);
 }
 
 for (var i=0; i<10; i++) {
   edges.push([i, (i+1) % 10]);
-  edgelen.push(.1);
+  edgelen.push(.05);
+  /*
   edges.push([i, (i+2) % 10]);
   edgelen.push(.4);
   edges.push([i, (i+3) % 10]);
   edgelen.push(.6);
   edges.push([i, (i+4) % 10]);
   edgelen.push(.7);
+  */
 }
-
-/*
-for (var i=0; i<8; i+=2) {
-  edges.push([i, i+2]);
-  edgelen.push(.1);
-}
-
-for (var i=0; i<7; i+=1) {
-  edges.push([i,i+3]);
-  edgelen.push(Math.sqrt(3)*.05*2);
-}
-*/
-
-/*
-edges.push([0,2]);
-edgelen.push(.1);
-edges.push([1,3]);
-edgelen.push(.1);
-edges.push([2,4]);
-edgelen.push(.1);
-edges.push([3,5]);
-edgelen.push(.1);
-*/
 
 function px_(x) {return half + x*half}
 
 function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
+  /*
   for (var i=0; i<x.length; i++) {
     ctx.fillRect(half + x[i] * half - 4, half + y[i] * half - 4, 8, 8);
   }
+  */
   for (var i=0; i<edges.length; i++) {
     ctx.beginPath();
     let a = edges[i][0];
@@ -74,22 +53,6 @@ function draw() {
     ctx.moveTo(px_(x[a]), px_(y[a]));
     ctx.lineTo(px_(x[b]), px_(y[b]));
     ctx.stroke();
-    let dx = x[b] - x[a];
-    let dy = y[b] - y[a];
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    if (Math.abs(dist - edgelen[i]) < TOLERANCE) {
-      continue;
-    }
-    let theta = Math.atan2(dy, dx);
-    let mag = (edgelen[i] - dist) / 2;
-    let ax = Math.cos(theta) * mag;
-    let ay = Math.sin(theta) * mag;
-    /*
-    vx[b] = DAMP * (vx[b] + -k * ax);
-    vy[b] = DAMP * (vy[b] + -k * ay);
-    vx[a] = DAMP * (vx[a] - -k * ax);
-    vy[a] = DAMP * (vy[a] - -k * ay);
-    */
   }
 }
 
@@ -130,7 +93,38 @@ function move() {
 function step() {
   adjust();
   move();
-  grav();
+  edgegrow();
+  edgesplit();
+  // grav();
+}
+
+function edgegrow() {
+  for (var i=0; i<edgelen.length; i++) {
+    edgelen[i] += .0005;
+  }
+}
+
+function edgesplit() {
+  var olen = edgelen.length;
+  // all new edges are added to the end, and we don't need to traverse them
+  for (var i=0; i<olen; i++) {
+    if (edgelen[i] < .1) {
+      continue;
+    }
+    edgelen[i] /= 2;
+    edgelen.push(edgelen[i]);
+    let a = edges[i][0];
+    let b = edges[i][1];
+    let dx = x[b] - x[a];
+    let dy = y[b] - y[a];
+    let ni = x.length;
+    x.push(x[a] + dx/2);
+    y.push(y[a] + dy/2);
+    vx.push(0);
+    vy.push(0);
+    edges.push([ni, edges[i][1]]);
+    edges[i][1] = ni;
+  }
 }
 
 let gx = .001;
