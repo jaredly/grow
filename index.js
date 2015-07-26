@@ -58,6 +58,23 @@ function draw() {
   }
 }
 
+function push(a, b, min) {
+  let dx = x[b] - x[a];
+  let dy = y[b] - y[a];
+  let dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist >= min) {
+    return;
+  }
+  let theta = Math.atan2(dy, dx);
+  let mag = (min - dist) / 2;
+  let ax = Math.cos(theta) * mag;
+  let ay = Math.sin(theta) * mag;
+  vx[b] = vx[b] - -k * ax;
+  vy[b] = vy[b] - -k * ay;
+  vx[a] = vx[a] + -k * ax;
+  vy[a] = vy[a] + -k * ay;
+}
+
 function match(a, b, length) {
   let dx = x[b] - x[a];
   let dy = y[b] - y[a];
@@ -97,6 +114,21 @@ function step() {
   move();
   edgegrow();
   edgesplit();
+  pushAway();
+}
+
+function pushAway() {
+  for (var i=0; i<x.length; i++) {
+    let connected = {};
+    for (var e=0; e<edges.length; e++) {
+      if (edges[e][0] === i) connected[edges[e][1]] = true;
+      else if (edges[e][1] === i) connected[edges[e][0]] = true;
+    }
+    for (var j=0; j<x.length; j++) {
+      if (j === i || connected[j]) continue;
+      push(i, j, .01);
+    }
+  }
 }
 
 function edgegrow() {
@@ -154,33 +186,6 @@ function edgesplit() {
     changed = true;
     */
     splitn(i, 4);
-  }
-}
-
-let gx = .001;
-
-function grav() {
-  for (var i=0; i<x.length; i++) {
-    vy[i] += gx;
-    if (y[i] >= 1) {
-      y[i] = 1;
-      vy[i] = 0;
-    }
-  }
-}
-
-function step_() {
-  for (var i=0; i<x.length; i++) {
-    let dx = (x[i] - tx[i])
-    let dy = (y[i] - ty[i])
-    vx[i] = DAMP * (vx[i] + -k * dx);
-    vy[i] = DAMP * (vy[i] + -k * dy);
-    x[i] += vx[i];
-    y[i] += vy[i];
-    if (Math.abs(dx) < .0001 && Math.abs(dy) < .0001 && Math.abs(vx[i]) < .0001 && Math.abs(vy[i]) < .0001) {
-      tx[i] = Math.random() - .5;
-      ty[i] = Math.random() - .5;
-    }
   }
 }
 
