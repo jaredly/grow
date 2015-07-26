@@ -19,7 +19,7 @@ let edgelen = [];
 let curlen = [];
 let age = [];
 
-var ipts = 10;
+var ipts = 3;
 
 for (var i=0; i<ipts; i++) {
   x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
@@ -220,5 +220,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(800);
+  run(1000);
 }, 500);
