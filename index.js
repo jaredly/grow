@@ -100,7 +100,7 @@ function step() {
 
 function edgegrow() {
   for (var i=0; i<edgelen.length; i++) {
-    edgelen[i] += .001;
+    edgelen[i] += .0005;
   }
 }
 
@@ -212,10 +212,10 @@ function splitn(i, n) {
     vx.push(0);
     vy.push(0);
   }
-  for (var z=0; z<n-2; z++) {
+  for (var z=0; z<n-3; z++) {
     edges.push([ni + z, ni + z + 1]);
   }
-  //edges.push([ni + n-2, edges[i][1]]);
+  edges.push([ni + n-2, edges[i][1]]);
   edges[i][1] = ni;
 }
 
