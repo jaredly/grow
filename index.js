@@ -72,10 +72,10 @@ function push(a, b, min) {
   let mag = (min - dist) / 2;
   let ax = Math.cos(theta) * mag;
   let ay = Math.sin(theta) * mag;
-  vx[b] = vx[b] - -k * ax;
-  vy[b] = vy[b] - -k * ay;
-  vx[a] = vx[a] + -k * ax;
-  vy[a] = vy[a] + -k * ay;
+  vx[b] = vx[b] - -k * ax / 2;
+  vy[b] = vy[b] - -k * ay / 2;
+  vx[a] = vx[a] + -k * ax / 2;
+  vy[a] = vy[a] + -k * ay / 2;
 }
 
 function match(a, b, length) {
