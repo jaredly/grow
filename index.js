@@ -27,9 +27,9 @@ for (var i=0; i<10; i++) {
 for (var i=0; i<10; i++) {
   edges.push([i, (i+1) % 10]);
   edgelen.push(.05);
+  /*
   edges.push([i, (i+2) % 10]);
   edgelen.push(.4);
-  /*
   edges.push([i, (i+3) % 10]);
   edgelen.push(.6);
   edges.push([i, (i+4) % 10]);
@@ -37,7 +37,7 @@ for (var i=0; i<10; i++) {
   */
 }
 
-function px_(x) {return half + x*half}
+function px_(x) {return half + x*half*2}
 
 function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
@@ -215,11 +215,13 @@ function splitn(i, n) {
   for (var z=0; z<n-2; z++) {
     edges.push([ni + z, ni + z + 1]);
   }
+  edgelen.push(edgelen[i] * 1.1);
+  edges.push([edges[i][0], edges[i][1]]);
   edges.push([ni + n-2, edges[i][1]]);
   edges[i][1] = ni;
 }
 
-var snum = 2;
+//var snum = 2;
 
 function edgesplit() {
   var olen = edgelen.length;
@@ -229,12 +231,14 @@ function edgesplit() {
     if (edgelen[i] < .1) {
       continue;
     }
+    /*
     if (!changed && snum > 2) {
       console.log('down');
       snum -= 1;
     }
     changed = true;
-    splitn(i, snum);
+    */
+    splitn(i, 3);
   }
 }
 
