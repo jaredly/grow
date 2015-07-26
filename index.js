@@ -7,35 +7,103 @@ const half = 400;
 const mx = 4;
 const TOLERANCE = .001;
 const m = 10;
-const DAMP = 0.90;
-const k = 0.01;
+const DAMP = 0.85;
+const k = 0.05;
 
 let x = [];
 let y = [];
 
-let tx = [];
-let ty = [];
-
 let vx = [];
 let vy = [];
+
+let edges = [];
+let edgelen = [];
 
 for (var i=0; i<10; i++) {
   x.push(Math.random() - .5);
   y.push(Math.random() - .5);
-  tx.push(Math.random() - .5);
-  ty.push(Math.random() - .5);
   vx.push(0);
   vy.push(0);
 }
+
+for (var i=0; i<9; i++) {
+  edges.push([i, i+1]);
+  edgelen.push(.1);
+}
+
+function px_(x) {return half + x*half}
 
 function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
   for (var i=0; i<x.length; i++) {
     ctx.fillRect(half + x[i] * half - 4, half + y[i] * half - 4, 8, 8);
   }
+  for (var i=0; i<edges.length; i++) {
+    ctx.beginPath();
+    let a = edges[i][0];
+    let b = edges[i][1];
+    ctx.moveTo(px_(x[a]), px_(y[a]));
+    ctx.lineTo(px_(x[b]), px_(y[b]));
+    ctx.stroke();
+    let dx = x[b] - x[a];
+    let dy = y[b] - y[a];
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if (Math.abs(dist - edgelen[i]) < TOLERANCE) {
+      continue;
+    }
+    let theta = Math.atan2(dy, dx);
+    let mag = (edgelen[i] - dist) / 2;
+    let ax = Math.cos(theta) * mag;
+    let ay = Math.sin(theta) * mag;
+    /*
+    vx[b] = DAMP * (vx[b] + -k * ax);
+    vy[b] = DAMP * (vy[b] + -k * ay);
+    vx[a] = DAMP * (vx[a] - -k * ax);
+    vy[a] = DAMP * (vy[a] - -k * ay);
+    */
+  }
+}
+
+function match(a, b, length) {
+  let dx = x[b] - x[a];
+  let dy = y[b] - y[a];
+  let dist = Math.sqrt(dx*dx + dy*dy);
+  if (Math.abs(dist - length) < TOLERANCE) {
+    return;
+  }
+  let theta = Math.atan2(dy, dx);
+  let mag = (length - dist) / 2;
+  let ax = Math.cos(theta) * mag;
+  let ay = Math.sin(theta) * mag;
+  vx[b] = vx[b] - -k * ax;
+  vy[b] = vy[b] - -k * ay;
+  vx[a] = vx[a] + -k * ax;
+  vy[a] = vy[a] + -k * ay;
+}
+
+function adjust() {
+  for (var i=0; i<edges.length; i++) {
+    let a = edges[i][0];
+    let b = edges[i][1];
+    match(a, b, edgelen[i]);
+  }
+}
+
+function move() {
+  for (var i=0; i<x.length; i++) {
+    vx[i] *= DAMP;
+    vy[i] *= DAMP;
+    x[i] += vx[i];
+    y[i] += vy[i];
+  }
 }
 
 function step() {
+  adjust();
+  move();
+}
+
+function step_() {
   for (var i=0; i<x.length; i++) {
     let dx = (x[i] - tx[i])
     let dy = (y[i] - ty[i])
