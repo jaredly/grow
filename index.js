@@ -19,7 +19,7 @@ let edgelen = [];
 let curlen = [];
 let age = [];
 
-var ipts = 3;
+var ipts = 5;
 
 for (var i=0; i<ipts; i++) {
   x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
@@ -137,6 +137,7 @@ function pushAway() {
 function edgegrow() {
   var edst = [];
   var esum = 0;
+  var emax = 0;
   for (var i=0; i<edgelen.length; i++) {
     let a = edges[i][0];
     let b = edges[i][1];
@@ -148,10 +149,13 @@ function edgegrow() {
     curlen[i] = Math.sqrt(dx*dx + dy*dy);
     edst.push(dcenter);
     esum += dcenter;
+    if (dcenter > emax) {
+      emax = dcenter;
+    }
   }
   var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
-    if (age[i] < 100 && edst[i] >= eavg) {
+    if (age[i] < 100 && edst[i] >= emax * .75) {
       edgelen[i] += .0008;
     }
   }
