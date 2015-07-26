@@ -22,8 +22,8 @@ let age = [];
 var ipts = 10;
 
 for (var i=0; i<ipts; i++) {
-  x.push(Math.cos(Math.PI/ipts*2*i) * .2) // * (.2 + Math.random()*.1));
-  y.push(Math.sin(Math.PI/ipts*2*i) * .2) // * (.2 + Math.random()*.1));
+  x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
+  y.push(Math.sin(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
   vx.push(0);
   vy.push(0);
 }
@@ -149,7 +149,7 @@ function edgegrow() {
     edst.push(dcenter);
     esum += dcenter;
   }
-  var eavg = esum / edgelen.length;
+  var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
     if (age[i] < 100 && edst[i] >= eavg) {
       edgelen[i] += .0008;
