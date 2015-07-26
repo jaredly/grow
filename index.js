@@ -7,7 +7,7 @@ const half = 400;
 const mx = 4;
 const TOLERANCE = .001;
 const m = 10;
-const DAMP = 0.85;
+const DAMP = 0.95;
 const k = 0.05;
 
 let x = [];
@@ -30,6 +30,32 @@ for (var i=0; i<9; i++) {
   edges.push([i, i+1]);
   edgelen.push(.1);
 }
+
+for (var i=1; i<8; i+=2) {
+  edges.push([i, i+2]);
+  edgelen.push(.1);
+}
+
+for (var i=0; i<8; i+=2) {
+  edges.push([i, i+2]);
+  edgelen.push(.1);
+}
+
+for (var i=0; i<7; i+=1) {
+  edges.push([i,i+3]);
+  edgelen.push(Math.sqrt(3)*.05*2);
+}
+
+/*
+edges.push([0,2]);
+edgelen.push(.1);
+edges.push([1,3]);
+edgelen.push(.1);
+edges.push([2,4]);
+edgelen.push(.1);
+edges.push([3,5]);
+edgelen.push(.1);
+*/
 
 function px_(x) {return half + x*half}
 
