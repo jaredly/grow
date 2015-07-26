@@ -104,6 +104,45 @@ function edgegrow() {
   }
 }
 
+function split2(i) {
+  edgelen[i] /= 2;
+  edgelen.push(edgelen[i]);
+  let a = edges[i][0];
+  let b = edges[i][1];
+  let dx = x[b] - x[a];
+  let dy = y[b] - y[a];
+  let ni = x.length;
+  x.push(x[a] + dx/2);
+  y.push(y[a] + dy/2);
+  vx.push(0);
+  vy.push(0);
+  edges.push([ni, edges[i][1]]);
+  edges[i][1] = ni;
+}
+
+function split3(i) {
+  edgelen[i] /= 3;
+  edgelen.push(edgelen[i]);
+  edgelen.push(edgelen[i]);
+  let a = edges[i][0];
+  let b = edges[i][1];
+  let dx = x[b] - x[a];
+  let dy = y[b] - y[a];
+  let ni = x.length;
+  x.push(x[a] + dx/3);
+  y.push(y[a] + dy/3);
+  vx.push(0);
+  vy.push(0);
+  let n2 = x.length;
+  x.push(x[a] + 2*dx/3);
+  y.push(y[a] + 2*dy/3);
+  vx.push(0);
+  vy.push(0);
+  edges.push([ni, n2]);
+  edges.push([n2, edges[i][1]]);
+  edges[i][1] = ni;
+}
+
 function edgesplit() {
   var olen = edgelen.length;
   // all new edges are added to the end, and we don't need to traverse them
@@ -111,19 +150,7 @@ function edgesplit() {
     if (edgelen[i] < .1) {
       continue;
     }
-    edgelen[i] /= 2;
-    edgelen.push(edgelen[i]);
-    let a = edges[i][0];
-    let b = edges[i][1];
-    let dx = x[b] - x[a];
-    let dy = y[b] - y[a];
-    let ni = x.length;
-    x.push(x[a] + dx/2);
-    y.push(y[a] + dy/2);
-    vx.push(0);
-    vy.push(0);
-    edges.push([ni, edges[i][1]]);
-    edges[i][1] = ni;
+    split3(i);
   }
 }
 
@@ -169,5 +196,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(1000);
+  run(500);
 }, 500);
