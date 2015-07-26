@@ -147,7 +147,7 @@ function edgesplit() {
     }
     changed = true;
     */
-    splitn(i, 3);
+    splitn(i, 2);
   }
 }
 
@@ -193,5 +193,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(1200);
+  run(1000);
 }, 500);
