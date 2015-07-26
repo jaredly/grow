@@ -124,7 +124,7 @@ function splitn(i, n) {
   for (var z=0; z<n-2; z++) {
     edges.push([ni + z, ni + z + 1]);
   }
-  edgelen.push(edgelen[i] * 1.2);
+  edgelen.push(edgelen[i] * 1);
   edges.push([edges[i][0], edges[i][1]]);
   edges.push([ni + n-2, edges[i][1]]);
   edges[i][1] = ni;
@@ -193,5 +193,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(1000);
+  run(940);
 }, 500);
