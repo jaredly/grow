@@ -16,6 +16,7 @@ let vy = [];
 
 let edges = [];
 let edgelen = [];
+let curlen = [];
 
 var ipts = 10;
 
@@ -39,7 +40,7 @@ for (var i=0; i<ipts; i++) {
   */
 }
 
-function px_(x) {return half + x*half*2}
+function px_(x) {return half + x*half*.5}
 
 function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
@@ -126,14 +127,31 @@ function pushAway() {
     }
     for (var j=0; j<x.length; j++) {
       if (j === i || connected[j]) continue;
-      push(i, j, .01);
+      push(i, j, .1);
     }
   }
 }
 
 function edgegrow() {
+  var edst = [];
+  var esum = 0;
   for (var i=0; i<edgelen.length; i++) {
-    edgelen[i] += .0003;
+    let a = edges[i][0];
+    let b = edges[i][1];
+    let dx = x[b] - x[a];
+    let dy = y[b] - y[a];
+    let cx = x[a] + dx/2;
+    let cy = y[a] + dy/2;
+    let dcenter = Math.sqrt(cx*cx + cy*cy);
+    // var rlen = Math.sqrt(dx*dx + dy*dy);
+    edst.push(dcenter);
+    esum += dcenter;
+  }
+  var eavg = esum / edgelen.length;
+  for (var i=0; i<edgelen.length; i++) {
+    if (edst[i] >= eavg) {
+      edgelen[i] += .0003;
+    }
   }
 }
 
@@ -204,5 +222,5 @@ function run(n) {
 
 draw();
 setTimeout(function () {
-  run(500);
+  run(1500);
 }, 500);
