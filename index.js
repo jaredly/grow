@@ -18,19 +18,25 @@ const PUSH_DIST = .2;
 const SHOW_POINTS = false;
 const COLOR_SCHEME = 'age';
 
-let x = [];
-let y = [];
+//let xb = new ArrayBuffer(8 * 2000);
+//let yb = new ArrayBuffer(8 * 2000);
 
-let vx = [];
-let vy = [];
+let x = new Array(2000);
+let y = new Array(2000);
 
-let nclose = [];
+let vx = new Array(2000);
+let vy = new Array(2000);
+
+let nclose = new Array(2000);
+let dead = new Array(2000);
 
 let edges = [];
 let edgelen = [];
 let curlen = [];
 let age = [];
-let dead = [];
+
+let num_points = 0;
+let num_edges = 0;
 
 function init(ipts) {
   x = [];
@@ -48,18 +54,20 @@ function init(ipts) {
   dead = [];
 
   for (var i=0; i<ipts; i++) {
-    x.push(Math.cos(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
-    y.push(Math.sin(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
-    vx.push(0);
-    vy.push(0);
-    dead.push(0);
-    nclose.push(0);
+    x[i] = (Math.cos(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
+    y[i] = (Math.sin(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
+    vx[i] = (0);
+    vy[i] = (0);
+    dead[i] = (0);
+    nclose[i] = (0);
+    num_points += 1;
   }
 
   for (var i=0; i<ipts; i++) {
     edges.push([i, (i+1) % ipts]);
     edgelen.push(.05);
     age.push(0);
+    num_edges += 1;
   }
 }
 
@@ -68,7 +76,7 @@ function px_(x) {return half + x*half*.3}
 function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
   if (SHOW_POINTS) {
-    for (var i=0; i<x.length; i++) {
+    for (var i=0; i<num_points; i++) {
       if (dead[i] > TOO_DEAD) {
         ctx.fillStyle = 'red';
       } else {
@@ -77,7 +85,7 @@ function draw() {
       ctx.fillRect(px_(x[i]) - 2, px_(y[i]) - 2, 4, 4);
     }
   }
-  for (var i=0; i<edges.length; i++) {
+  for (var i=0; i<num_edges; i++) {
     ctx.beginPath();
     let a = edges[i][0];
     let b = edges[i][1];
@@ -152,7 +160,7 @@ function match(a, b, length) {
 }
 
 function adjust() {
-  for (var i=0; i<edges.length; i++) {
+  for (var i=0; i<num_edges; i++) {
     let a = edges[i][0];
     let b = edges[i][1];
     match(a, b, edgelen[i]);
@@ -160,7 +168,7 @@ function adjust() {
 }
 
 function move() {
-  for (var i=0; i<x.length; i++) {
+  for (var i=0; i<num_points; i++) {
     if (dead[i] > TOO_DEAD) {
       continue;
     }
@@ -177,17 +185,17 @@ function move() {
 }
 
 function pushAway() {
-  for (var i=0; i<x.length; i++) {
+  for (var i=0; i<num_points; i++) {
     var connected = {};
     var close = 0;
-    for (var e=0; e<edges.length; e++) {
+    for (var e=0; e<num_edges; e++) {
       if (edges[e][0] === i) {
         connected[edges[e][1]] = true;
       } else if (edges[e][1] === i) {
         connected[edges[e][0]] = true;
       }
     }
-    for (var j=0; j<x.length; j++) {
+    for (var j=0; j<num_points; j++) {
       if (j === i || connected[j]) continue;
       if (dead[i] > TOO_DEAD && dead[j] > TOO_DEAD) continue;
       var d = push(i, j, PUSH_DIST);
@@ -233,7 +241,7 @@ function splitn(i, n) {
   let b = edges[i][1];
   let dx = x[b] - x[a];
   let dy = y[b] - y[a];
-  let ni = x.length;
+  let ni = num_points;
   edgelen[i] /= n;
   age[i] = 0;
   for (var z=0; z<n-1; z++) {
@@ -241,19 +249,22 @@ function splitn(i, n) {
     age.push(0);
   }
   for (var z=1; z<n; z++) {
-    x.push(x[a] + z * dx/n);
-    y.push(y[a] + z * dy/n);
-    vx.push(0);
-    vy.push(0);
-    dead.push(0);
-    nclose.push(0);
+    x[ni - 1 + z] = (x[a] + z * dx/n);
+    y[ni - 1 + z] = (y[a] + z * dy/n);
+    vx[ni - 1 + z] = (0);
+    vy[ni - 1 + z] = (0);
+    dead[ni - 1 + z] = (0);
+    nclose[ni - 1 + z] = (0);
+    num_points += 1;
   }
   for (var z=0; z<n-2; z++) {
     edges.push([ni + z, ni + z + 1]);
+    num_edges += 1;
   }
   // edgelen.push(edgelen[i] * 0.8);
   // edges.push([edges[i][0], edges[i][1]]);
   edges.push([ni + n-2, edges[i][1]]);
+  num_edges += 1;
   edges[i][1] = ni;
 }
 
