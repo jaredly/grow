@@ -18,17 +18,21 @@ const PUSH_DIST = .2;
 const SHOW_POINTS = false;
 const COLOR_SCHEME = 'age';
 
-//let xb = new ArrayBuffer(8 * 2000);
-//let yb = new ArrayBuffer(8 * 2000);
+const xb = new ArrayBuffer(8 * 2000);
+const yb = new ArrayBuffer(8 * 2000);
+const vxb = new ArrayBuffer(8 * 2000);
+const vyb = new ArrayBuffer(8 * 2000);
+const ncloseb = new ArrayBuffer(1 * 2000);
+const deadb = new ArrayBuffer(1 * 2000);
 
-let x = new Array(2000);
-let y = new Array(2000);
+const x = new Float64Array(xb);
+const y = new Float64Array(yb);
 
-let vx = new Array(2000);
-let vy = new Array(2000);
+const vx = new Float64Array(vxb);
+const vy = new Float64Array(vyb);
 
-let nclose = new Array(2000);
-let dead = new Array(2000);
+const nclose = new Uint8Array(ncloseb);
+const dead = new Uint8Array(deadb);
 
 let edges = [];
 let edgelen = [];
@@ -39,19 +43,13 @@ let num_points = 0;
 let num_edges = 0;
 
 function init(ipts) {
-  x = [];
-  y = [];
-
-  vx = [];
-  vy = [];
-
-  nclose = [];
+  num_points = 0;
+  num_edges = 0;
 
   edges = [];
   edgelen = [];
   curlen = [];
   age = [];
-  dead = [];
 
   for (var i=0; i<ipts; i++) {
     x[i] = (Math.cos(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
@@ -310,11 +308,9 @@ function test(pts, n) {
   }, 100);
 }
 
-/*
 init(10);
 draw();
 setTimeout(function () {
   run(300);
 }, 500);
-*/
-test(5, 300);
+//test(5, 300);
