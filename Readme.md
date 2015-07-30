@@ -14,7 +14,7 @@ All the commits
 
 ![86f18d6](http://imgur.com/sHiQxTW.png)
 
-![c9ba7c9](http://giant.gfycat.com/ZestyUnequaledBison.gif)
+![c9ba7c9](http://fat.gfycat.com/ZestyUnequaledBison.gif)
 
 ![689bfbe](http://imgur.com/ZXbOQia.png)
 

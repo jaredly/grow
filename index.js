@@ -8,6 +8,10 @@ const TOLERANCE = .001;
 const DAMP = 0.85;
 const k = 0.05;
 
+const MAX_LEN = .1;
+const TOO_CLOSE = 10;
+const TOO_DEAD = 1000;
+
 let x = [];
 let y = [];
 
@@ -20,6 +24,7 @@ let edges = [];
 let edgelen = [];
 let curlen = [];
 let age = [];
+let dead = [];
 
 var ipts = 5;
 
@@ -28,6 +33,7 @@ for (var i=0; i<ipts; i++) {
   y.push(Math.sin(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
   vx.push(0);
   vy.push(0);
+  dead.push(0);
   nclose.push(0);
 }
 
@@ -35,14 +41,6 @@ for (var i=0; i<ipts; i++) {
   edges.push([i, (i+1) % ipts]);
   edgelen.push(.05);
   age.push(0);
-  /*
-  edges.push([i, (i+2) % ipts]);
-  edgelen.push(.4);
-  edges.push([i, (i+3) % ipts]);
-  edgelen.push(.6);
-  edges.push([i, (i+4) % ipts]);
-  edgelen.push(.7);
-  */
 }
 
 function px_(x) {return half + x*half*.3}
@@ -51,7 +49,12 @@ function draw() {
   ctx.clearRect(0, 0, half*2, half*2);
   /*
   for (var i=0; i<x.length; i++) {
-    ctx.fillRect(half + x[i] * half - 4, half + y[i] * half - 4, 8, 8);
+    if (dead[i] > TOO_DEAD) {
+      ctx.fillStyle = 'red';
+    } else {
+      ctx.fillStyle = 'green';
+    }
+    ctx.fillRect(px_(x[i]) - 2, px_(y[i]) - 2, 4, 4);
   }
   */
   for (var i=0; i<edges.length; i++) {
@@ -60,6 +63,13 @@ function draw() {
     let b = edges[i][1];
     ctx.moveTo(px_(x[a]), px_(y[a]));
     ctx.lineTo(px_(x[b]), px_(y[b]));
+    if (dead[edges[i][0]] > TOO_DEAD && dead[edges[i][1]] > TOO_DEAD) {
+      ctx.strokeStyle = 'black';
+    } else if (nclose[edges[i][0]] > TOO_CLOSE && nclose[edges[i][1]] > TOO_CLOSE) {
+      ctx.strokeStyle = 'red';
+    } else {
+      ctx.strokeStyle = 'green';
+    }
     ctx.stroke();
   }
 }
@@ -69,17 +79,25 @@ function push(a, b, min) {
   let dy = y[b] - y[a];
   let dist = Math.sqrt(dx*dx + dy*dy);
   if (dist >= min) {
-    return false;
+    return dist;
   }
   let theta = Math.atan2(dy, dx);
   let mag = (min - dist) / 2;
   let ax = Math.cos(theta) * mag;
   let ay = Math.sin(theta) * mag;
-  vx[b] = vx[b] - -k * ax / 2;
-  vy[b] = vy[b] - -k * ay / 2;
-  vx[a] = vx[a] + -k * ax / 2;
-  vy[a] = vy[a] + -k * ay / 2;
-  return true;
+  if (dead[a] > TOO_DEAD) {
+    vx[b] = vx[b] - -k * ax;
+    vy[b] = vy[b] - -k * ay;
+  } else if (dead[b] > TOO_DEAD) {
+    vx[a] = vx[a] + -k * ax;
+    vy[a] = vy[a] + -k * ay;
+  } else {
+    vx[b] = vx[b] - -k * ax / 2;
+    vy[b] = vy[b] - -k * ay / 2;
+    vx[a] = vx[a] + -k * ax / 2;
+    vy[a] = vy[a] + -k * ay / 2;
+  }
+  return dist;
 }
 
 function match(a, b, length) {
@@ -109,6 +127,9 @@ function adjust() {
 
 function move() {
   for (var i=0; i<x.length; i++) {
+    if (dead[i] > TOO_DEAD) {
+      continue;
+    }
     vx[i] *= DAMP;
     vy[i] *= DAMP;
     x[i] += vx[i];
@@ -116,25 +137,35 @@ function move() {
   }
 }
 
-function step() {
-  adjust();
-  pushAway();
-  edgegrow();
-  edgesplit();
-  move();
-}
-
 function pushAway() {
   for (var i=0; i<x.length; i++) {
     let connected = {};
     let close = 0;
+    let metoo = nclose[i] > TOO_CLOSE;
+    let growing_edges = false;
     for (var e=0; e<edges.length; e++) {
-      if (edges[e][0] === i) connected[edges[e][1]] = true;
-      else if (edges[e][1] === i) connected[edges[e][0]] = true;
+      if (edges[e][0] === i) {
+        connected[edges[e][1]] = true;
+        if (nclose[edges[e][1]] <= TOO_CLOSE) {
+          growing_edges = true;
+        }
+      } else if (edges[e][1] === i) {
+        connected[edges[e][0]] = true;
+        if (nclose[edges[e][0]] <= TOO_CLOSE) {
+          growing_edges = true;
+        }
+      }
+    }
+    if (metoo) {
+      dead[i] += 1;
+    } else {
+      dead[i] = 0;
     }
     for (var j=0; j<x.length; j++) {
       if (j === i || connected[j]) continue;
-      if (push(i, j, .1)) {
+      if (dead[i] > TOO_DEAD && dead[j] > TOO_DEAD) continue;
+      let d = push(i, j, MAX_LEN);
+      if (d < MAX_LEN * 1.5) {
         close += 1;
       }
     }
@@ -164,12 +195,10 @@ function edgegrow() {
   var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
     if (age[i] > 100) continue;
-    if (nclose[edges[i][0]] > 2 && nclose[edges[i][1]] > 2) {
+    if (nclose[edges[i][0]] > TOO_CLOSE && nclose[edges[i][1]] > TOO_CLOSE) {
       continue;
     }
-    //if (age[i] < 100 && edst[i] >= emax * .9) {
-      edgelen[i] += .0008;
-    //}
+    edgelen[i] += .0008;
   }
 }
 
@@ -190,6 +219,7 @@ function splitn(i, n) {
     y.push(y[a] + z * dy/n);
     vx.push(0);
     vy.push(0);
+    dead.push(0);
     nclose.push(0);
   }
   for (var z=0; z<n-2; z++) {
@@ -205,25 +235,20 @@ function edgesplit() {
   var olen = edgelen.length;
   // all new edges are added to the end, and we don't need to traverse them
   for (var i=0; i<olen; i++) {
-    if (curlen[i] < .1 || edgelen[i] < .1) {
+    if (curlen[i] < MAX_LEN || edgelen[i] < MAX_LEN) {
+      continue;
+    }
+    if (nclose[edges[i][0]] > TOO_CLOSE && nclose[edges[i][1]] > TOO_CLOSE) {
       continue;
     }
     splitn(i, 2);
   }
 }
 
-function tick() {
-  step();
-  draw();
-}
 
-function run(n) {
-  tick();
-  if (n > 0) {
-    return requestAnimationFrame(run.bind(null, n-1));
-  }
-  console.log('done');
-}
+function step() { adjust(); pushAway(); edgegrow(); edgesplit(); move(); }
+function tick() { step(); draw(); }
+function run(n) { tick(); if (n > 0) { return requestAnimationFrame(run.bind(null, n-1)); } console.log('done'); }
 
 draw();
 setTimeout(function () {
