@@ -8,15 +8,15 @@ const TOLERANCE = .001;
 const DAMP = 0.85;
 const k = 0.05;
 
-const MAX_LEN = .1;
-const TOO_CLOSE = 10;
+const MAX_LEN = .05;
+const TOO_CLOSE = 20;
 const TOO_DEAD = 20;
 const DEAD_MOTION = .0001;
 const CLOSE_DIST = .25;
 const PUSH_DIST = .2;
 
 const SHOW_POINTS = false;
-const COLOR_SCHEME = 'liveness';
+const COLOR_SCHEME = 'age';
 
 let x = [];
 let y = [];
@@ -32,21 +32,35 @@ let curlen = [];
 let age = [];
 let dead = [];
 
-var ipts = 5;
+function init(ipts) {
+  x = [];
+  y = [];
 
-for (var i=0; i<ipts; i++) {
-  x.push(Math.cos(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
-  y.push(Math.sin(Math.PI/ipts*2*i) * .1) // * (.2 + Math.random()*.1));
-  vx.push(0);
-  vy.push(0);
-  dead.push(0);
-  nclose.push(0);
-}
+  vx = [];
+  vy = [];
 
-for (var i=0; i<ipts; i++) {
-  edges.push([i, (i+1) % ipts]);
-  edgelen.push(.05);
-  age.push(0);
+  nclose = [];
+
+  edges = [];
+  edgelen = [];
+  curlen = [];
+  age = [];
+  dead = [];
+
+  for (var i=0; i<ipts; i++) {
+    x.push(Math.cos(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
+    y.push(Math.sin(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
+    vx.push(0);
+    vy.push(0);
+    dead.push(0);
+    nclose.push(0);
+  }
+
+  for (var i=0; i<ipts; i++) {
+    edges.push([i, (i+1) % ipts]);
+    edgelen.push(.05);
+    age.push(0);
+  }
 }
 
 function px_(x) {return half + x*half*.3}
@@ -71,7 +85,7 @@ function draw() {
     ctx.lineTo(px_(x[b]), px_(y[b]));
     age[i] += 1;
     if (COLOR_SCHEME === 'age') {
-      ctx.strokeStyle = 'hsl(' + (age[i] % 360) + ',100%,30%)';
+      ctx.strokeStyle = 'hsl(' + (age[i] % 360) + ',100%,60%)';
     } else {
       if (dead[edges[i][0]] > TOO_DEAD && dead[edges[i][1]] > TOO_DEAD) {
         ctx.strokeStyle = 'black';
@@ -88,6 +102,15 @@ function draw() {
 function push(a, b, min) {
   let dx = x[b] - x[a];
   let dy = y[b] - y[a];
+  let fx = Math.max(Math.abs(dx), Math.abs(dy));
+  if (fx > min) {
+    return fx;
+  }
+  /*
+  if (Math.abs(dx) + Math.abs(dy) >= min) {
+    return Math.abs(dx) + Math.abs(dy);
+  }
+  */
   let dist = Math.sqrt(dx*dx + dy*dy);
   if (dist >= min) {
     return dist;
@@ -155,8 +178,8 @@ function move() {
 
 function pushAway() {
   for (var i=0; i<x.length; i++) {
-    let connected = {};
-    let close = 0;
+    var connected = {};
+    var close = 0;
     for (var e=0; e<edges.length; e++) {
       if (edges[e][0] === i) {
         connected[edges[e][1]] = true;
@@ -167,7 +190,7 @@ function pushAway() {
     for (var j=0; j<x.length; j++) {
       if (j === i || connected[j]) continue;
       if (dead[i] > TOO_DEAD && dead[j] > TOO_DEAD) continue;
-      let d = push(i, j, PUSH_DIST);
+      var d = push(i, j, PUSH_DIST);
       if (d < CLOSE_DIST) {
         close += 1;
       }
@@ -251,9 +274,36 @@ function edgesplit() {
 
 function step() { adjust(); pushAway(); edgegrow(); edgesplit(); move(); }
 function tick() { step(); draw(); }
-function run(n) { tick(); if (n > 0) { return requestAnimationFrame(run.bind(null, n-1)); } console.log('done'); }
+function run(n) {
+  var a = Date.now();
+  tick();
+  var diff = Date.now() - a;
+  if (diff > 100) {
+    console.log('Long time', n, diff);
+  }
+  if (n > 0) {
+    return requestAnimationFrame(run.bind(null, n-1));
+  }
+}
 
+function test(pts, n) {
+  init(pts);
+  draw();
+  setTimeout(function () {
+    let start = performance.now();
+    for (var i=0; i<n; i++) {
+      tick();
+    }
+    console.log(performance.now() - start);
+    console.log('done');
+  }, 100);
+}
+
+/*
+init(10);
 draw();
 setTimeout(function () {
-  run(1000);
+  run(300);
 }, 500);
+*/
+test(5, 300);
