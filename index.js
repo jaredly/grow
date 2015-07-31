@@ -6,22 +6,24 @@ var ctx = canv.getContext('2d');
 const half = 400;
 const TOLERANCE = .001;
 const DAMP = 0.75;
-const STICK_K = 0.05;
+const STICK_K = 0.09;
 const AVOID_K = 0.01;
 
 const MAX_LEN = .02;
 const TOO_CROWDED = 25; // neighbors
+const MIN_CROWD = 5;
 const TOO_DEAD = 20;
 const DEAD_MOTION = .0001;
 const CLOSE_DIST = .35;
 const PUSH_DIST = .2;
-const GROW_SPEED = .0008;
+const GROW_SPEED = .0002;
+const MAX_SPEED = .0008;
 
 let SHOW_POINTS = false;
 let COLOR_SCHEME = 'age';
 const RANDOM = false;
 
-ctx.lineWidth = 10;
+ctx.lineWidth = 7;
 
 const x = [];
 const y = [];
@@ -232,7 +234,12 @@ function edgegrow() {
     if (nclose[edges[i][0]] > TOO_CROWDED && nclose[edges[i][1]] > TOO_CROWDED) {
       continue;
     }
-    edgelen[i] += GROW_SPEED;
+    let least = Math.min(nclose[edges[i][0]], nclose[edges[i][1]]);
+    if (least <= MIN_CROWD) {
+      edgelen[i] += MAX_SPEED;
+    } else {
+      edgelen[i] += GROW_SPEED + (MAX_SPEED - GROW_SPEED) * (least - MIN_CROWD) / (TOO_CROWDED - MIN_CROWD);
+    }
   }
 }
 
@@ -319,7 +326,7 @@ const TEST = false;
 if (TEST) {
   test(5, 300);
 } else {
-  init(20);
+  init(6);
   draw();
   setTimeout(function () {
     run(1000);
