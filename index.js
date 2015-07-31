@@ -10,16 +10,18 @@ const STICK_K = 0.05;
 const AVOID_K = 0.01;
 
 const MAX_LEN = .02;
-const TOO_CROWDED = 15; // neighbors
+const TOO_CROWDED = 25; // neighbors
 const TOO_DEAD = 20;
 const DEAD_MOTION = .0001;
 const CLOSE_DIST = .35;
 const PUSH_DIST = .2;
 const GROW_SPEED = .0008;
 
-const SHOW_POINTS = false;
-const COLOR_SCHEME = 'something';
+let SHOW_POINTS = false;
+let COLOR_SCHEME = 'age';
 const RANDOM = false;
+
+ctx.lineWidth = 10;
 
 const x = [];
 const y = [];
@@ -96,7 +98,7 @@ function draw() {
     ctx.lineTo(px_(x[b]), px_(y[b]));
     age[i] += 1;
     if (COLOR_SCHEME === 'age') {
-      ctx.strokeStyle = 'hsl(' + (age[i] % 360) + ',100%,60%)';
+      ctx.strokeStyle = 'hsl(' + ((age[i] / 2) % 360) + ',100%,60%)';
     } else {
       if (dead[edges[i][0]] > TOO_DEAD && dead[edges[i][1]] > TOO_DEAD) {
         ctx.strokeStyle = 'black';
@@ -317,6 +319,6 @@ if (TEST) {
   init(3);
   draw();
   setTimeout(function () {
-    run(300);
+    run(1000);
   }, 500);
 }
