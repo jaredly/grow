@@ -1,6 +1,10 @@
 All the commits
 
-![](http://giant.gfycat.com/EminentForthrightBilby.gif);
+![46eb963](http://imgur.com/j6KEmy8.png)
+
+![f0e07c5](http://imgur.com/RnEGq50.png)
+
+![c6c962a](http://giant.gfycat.com/EminentForthrightBilby.gif)
 
 ![4ab70b4](http://imgur.com/mSzTIF5.png)
 
