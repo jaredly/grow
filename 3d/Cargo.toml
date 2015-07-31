@@ -1,0 +1,11 @@
+[package]
+name = "rust"
+version = "0.1.0"
+authors = ["jaredly"]
+
+[dependencies]
+nalgebra = "*"
+gl = "*"
+
+[dependencies.kiss3d]
+git = "https://github.com/sebcrozet/kiss3d"

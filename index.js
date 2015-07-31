@@ -210,6 +210,7 @@ function pushAway() {
 }
 
 function edgegrow() {
+  /*
   var edst = [];
   var esum = 0;
   var emax = 0;
@@ -229,6 +230,7 @@ function edgegrow() {
     }
   }
   var eavg = esum / (edgelen.length + 1);
+  */
   for (var i=0; i<edgelen.length; i++) {
     // if (age[i] > 100) continue;
     if (nclose[edges[i][0]] > TOO_CROWDED && nclose[edges[i][1]] > TOO_CROWDED) {
