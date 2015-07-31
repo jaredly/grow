@@ -19,7 +19,7 @@ const GROW_SPEED = .0008;
 
 const SHOW_POINTS = false;
 const COLOR_SCHEME = 'something';
-const RANDOM = true;
+const RANDOM = false;
 
 const x = [];
 const y = [];
@@ -170,7 +170,7 @@ function move() {
     if (dead[i] > TOO_DEAD) {
       continue;
     }
-    if (Math.abs(vx[i]) < DEAD_MOTION && Math.abs(vy[i]) < DEAD_MOTION) {
+    if (nclose[i] > TOO_CROWDED && Math.abs(vx[i]) < DEAD_MOTION && Math.abs(vy[i]) < DEAD_MOTION) {
       dead[i] += 1;
     } else {
       dead[i] = 0;
@@ -226,7 +226,7 @@ function edgegrow() {
   }
   var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
-    if (age[i] > 100) continue;
+    // if (age[i] > 100) continue;
     if (nclose[edges[i][0]] > TOO_CROWDED && nclose[edges[i][1]] > TOO_CROWDED) {
       continue;
     }
@@ -314,7 +314,7 @@ const TEST = false;
 if (TEST) {
   test(5, 300);
 } else {
-  init(10);
+  init(3);
   draw();
   setTimeout(function () {
     run(300);
