@@ -21,7 +21,7 @@ const MAX_SPEED = .0008;
 
 let SHOW_POINTS = false;
 let COLOR_SCHEME = 'age';
-const RANDOM = false;
+const RANDOM = true;
 
 ctx.lineWidth = 7;
 
@@ -100,7 +100,7 @@ function draw() {
     ctx.lineTo(px_(x[b]), px_(y[b]));
     age[i] += 1;
     if (COLOR_SCHEME === 'age') {
-      ctx.strokeStyle = 'hsl(' + ((age[i] / 2) % 360) + ',100%,60%)';
+      ctx.strokeStyle = 'hsl(' + ((age[i] / 2) % 180 + 180) + ',100%,60%)';
     } else {
       if (dead[edges[i][0]] > TOO_DEAD && dead[edges[i][1]] > TOO_DEAD) {
         ctx.strokeStyle = 'black';
