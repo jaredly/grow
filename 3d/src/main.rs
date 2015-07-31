@@ -45,6 +45,7 @@ struct Node {
 }
 
 struct State {
+    time: i32,
     pts: Vec<Node>,// = [Pnt3{x: 0.0, y: 0.0, z:0.0}; 1000];
     edges: Vec<Edge>,// = [Edge{a: 0, b: 0}; 1000];
     // num_pts: i32,// = 0;
@@ -59,6 +60,7 @@ fn angle_between(p1: &Pnt3<f32>, p2: &Pnt3<f32>) -> f32 {
 impl State {
     fn init() -> State {
         State{
+            time: 0,
             pts: vec![],
             edges: vec![],
             // num_pts: 0,
@@ -125,8 +127,16 @@ impl State {
     }
 
     fn edge_grow(&mut self) {
-        for i in 0..self.edges.len() {
-            self.edges[i].len += GROW_SPEED;
+        if (self.time / 300) % 2 == 0 {
+            for i in 0..self.edges.len() {
+                self.edges[i].len += GROW_SPEED;
+            }
+        } else {
+            for i in 0..self.edges.len() {
+                if (self.edges[i].len > GROW_SPEED * 2.0) {
+                    self.edges[i].len -= GROW_SPEED;
+                }
+            }
         }
     }
 
@@ -159,6 +169,7 @@ impl State {
     }
 
     fn tick(&mut self) {
+        self.time += 1;
         self.adjust();
         //self.pushAway();
         self.edge_grow();
@@ -181,7 +192,13 @@ fn main() {
     let mut window = Window::new("Kiss3d: cube");
     //let mut c      = window.add_cube(1.0, 1.0, 1.0);
     //c.set_color(1.0, 0.0, 0.0);
-    unsafe{gl::LineWidth(2.0);}
+    unsafe{
+        gl::LineWidth(1.0);
+        gl::Enable(gl::LINE_SMOOTH);
+        gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
+        gl::Enable(gl::BLEND);
+        gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+    }
 
     window.set_background_color(1.0, 1.0, 1.0);
 
@@ -189,13 +206,14 @@ fn main() {
 
     while window.render() {
         // c.prepend_to_local_rotation(&Vec3::new(0.0f32, 0.014, 0.0));
+        /*
         let a = Pnt3::new(-0.1, -0.1, 0.0);
         let b = Pnt3::new(0.0, 0.1, 0.0);
         let c = Pnt3::new(0.1, -0.1, 0.0);
-
         window.draw_line(&a, &b, &Pnt3::new(1.0, 0.0, 0.0));
         window.draw_line(&b, &c, &Pnt3::new(0.0, 1.0, 0.0));
         window.draw_line(&c, &a, &Pnt3::new(0.0, 0.0, 1.0));
+        */
 
         state.tick();
         state.draw(&mut window);
