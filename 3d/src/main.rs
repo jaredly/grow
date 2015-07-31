@@ -13,15 +13,15 @@ const DAMP: f32 = 0.85;
 const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.01;
 
-const MAX_LEN: f32 = 0.2;
+const MAX_LEN: f32 = 0.1;
 const TOO_CROWDED: i32 = 25; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 20;
 const DEAD_MOTION: f32 = 0.0001;
 const CLOSE_DIST: f32 = 0.35;
 const PUSH_DIST: f32 = 0.2;
-const GROW_SPEED: f32 = 0.002;
-const MAX_SPEED: f32 = 0.008;
+const GROW_SPEED: f32 = 0.001;
+const MAX_SPEED: f32 = 0.004;
 
 
 //let SHOW_POINTS = false;
@@ -189,9 +189,7 @@ fn main() {
     let mut state = State::init();
     state.start(10);
 
-    let mut window = Window::new("Kiss3d: cube");
-    //let mut c      = window.add_cube(1.0, 1.0, 1.0);
-    //c.set_color(1.0, 0.0, 0.0);
+    let mut window = Window::new("Grow");
     unsafe{
         gl::LineWidth(1.0);
         gl::Enable(gl::LINE_SMOOTH);
@@ -205,16 +203,6 @@ fn main() {
     window.set_light(Light::StickToCamera);
 
     while window.render() {
-        // c.prepend_to_local_rotation(&Vec3::new(0.0f32, 0.014, 0.0));
-        /*
-        let a = Pnt3::new(-0.1, -0.1, 0.0);
-        let b = Pnt3::new(0.0, 0.1, 0.0);
-        let c = Pnt3::new(0.1, -0.1, 0.0);
-        window.draw_line(&a, &b, &Pnt3::new(1.0, 0.0, 0.0));
-        window.draw_line(&b, &c, &Pnt3::new(0.0, 1.0, 0.0));
-        window.draw_line(&c, &a, &Pnt3::new(0.0, 0.0, 1.0));
-        */
-
         state.tick();
         state.draw(&mut window);
     }
