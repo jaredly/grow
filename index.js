@@ -286,6 +286,7 @@ function edgesplit() {
 function step() { adjust(); pushAway(); edgegrow(); edgesplit(); move(); }
 function tick() { step(); draw(); }
 function run(n) {
+  if (STOP) return console.log('stopped');
   var a = Date.now();
   tick();
   var diff = Date.now() - a;
@@ -297,6 +298,8 @@ function run(n) {
   }
   console.log('done');
 }
+
+let STOP = false;
 
 function test(pts, n) {
   init(pts);
@@ -316,7 +319,7 @@ const TEST = false;
 if (TEST) {
   test(5, 300);
 } else {
-  init(3);
+  init(20);
   draw();
   setTimeout(function () {
     run(1000);
