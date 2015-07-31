@@ -5,34 +5,30 @@ var ctx = canv.getContext('2d');
 
 const half = 400;
 const TOLERANCE = .001;
-const DAMP = 0.85;
-const k = 0.05;
+const DAMP = 0.75;
+const STICK_K = 0.05;
+const AVOID_K = 0.01;
 
-const MAX_LEN = .05;
-const TOO_CLOSE = 20;
+const MAX_LEN = .02;
+const TOO_CROWDED = 15; // neighbors
 const TOO_DEAD = 20;
 const DEAD_MOTION = .0001;
-const CLOSE_DIST = .25;
+const CLOSE_DIST = .35;
 const PUSH_DIST = .2;
+const GROW_SPEED = .0008;
 
 const SHOW_POINTS = false;
-const COLOR_SCHEME = 'age';
+const COLOR_SCHEME = 'something';
+const RANDOM = true;
 
-const xb = new ArrayBuffer(8 * 2000);
-const yb = new ArrayBuffer(8 * 2000);
-const vxb = new ArrayBuffer(8 * 2000);
-const vyb = new ArrayBuffer(8 * 2000);
-const ncloseb = new ArrayBuffer(1 * 2000);
-const deadb = new ArrayBuffer(1 * 2000);
+const x = [];
+const y = [];
 
-const x = new Float64Array(xb);
-const y = new Float64Array(yb);
+const vx = [];
+const vy = [];
 
-const vx = new Float64Array(vxb);
-const vy = new Float64Array(vyb);
-
-const nclose = new Uint8Array(ncloseb);
-const dead = new Uint8Array(deadb);
+const nclose = [];
+const dead = [];
 
 let edges = [];
 let edgelen = [];
@@ -51,9 +47,18 @@ function init(ipts) {
   curlen = [];
   age = [];
 
+  const circumference = ipts * MAX_LEN * .75;
+  const radius = circumference / 2 / Math.PI;
+  const scale = 2 * Math.PI/ipts
   for (var i=0; i<ipts; i++) {
-    x[i] = (Math.cos(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
-    y[i] = (Math.sin(Math.PI/ipts*2*i) * .1);//(.2 + Math.random()*.1));
+    let rad;
+    if (RANDOM) {
+      rad = radius + Math.random() * .1;
+    } else {
+      rad = radius;
+    }
+    x[i] = (Math.cos(scale * i) * rad);
+    y[i] = (Math.sin(scale * i) * rad);
     vx[i] = (0);
     vy[i] = (0);
     dead[i] = (0);
@@ -95,7 +100,7 @@ function draw() {
     } else {
       if (dead[edges[i][0]] > TOO_DEAD && dead[edges[i][1]] > TOO_DEAD) {
         ctx.strokeStyle = 'black';
-      } else if (nclose[edges[i][0]] > TOO_CLOSE && nclose[edges[i][1]] > TOO_CLOSE) {
+      } else if (nclose[edges[i][0]] > TOO_CROWDED && nclose[edges[i][1]] > TOO_CROWDED) {
         ctx.strokeStyle = 'red';
       } else {
         ctx.strokeStyle = 'green';
@@ -112,30 +117,25 @@ function push(a, b, min) {
   if (fx > min) {
     return fx;
   }
-  /*
-  if (Math.abs(dx) + Math.abs(dy) >= min) {
-    return Math.abs(dx) + Math.abs(dy);
-  }
-  */
   let dist = Math.sqrt(dx*dx + dy*dy);
   if (dist >= min) {
     return dist;
   }
   let theta = Math.atan2(dy, dx);
   let mag = (min - dist) / 2;
-  let ax = Math.cos(theta) * mag;
-  let ay = Math.sin(theta) * mag;
+  let ax = Math.cos(theta) * mag * -AVOID_K;
+  let ay = Math.sin(theta) * mag * -AVOID_K;
   if (dead[a] > TOO_DEAD) {
-    vx[b] = vx[b] - -k * ax;
-    vy[b] = vy[b] - -k * ay;
+    vx[b] -= ax;
+    vy[b] -= ay;
   } else if (dead[b] > TOO_DEAD) {
-    vx[a] = vx[a] + -k * ax;
-    vy[a] = vy[a] + -k * ay;
+    vx[a] += ax;
+    vy[a] += ay;
   } else {
-    vx[b] = vx[b] - -k * ax / 2;
-    vy[b] = vy[b] - -k * ay / 2;
-    vx[a] = vx[a] + -k * ax / 2;
-    vy[a] = vy[a] + -k * ay / 2;
+    vx[b] -= ax / 2;
+    vy[b] -= ay / 2;
+    vx[a] += ax / 2;
+    vy[a] += ay / 2;
   }
   return dist;
 }
@@ -149,12 +149,12 @@ function match(a, b, length) {
   }
   let theta = Math.atan2(dy, dx);
   let mag = (length - dist) / 2;
-  let ax = Math.cos(theta) * mag;
-  let ay = Math.sin(theta) * mag;
-  vx[b] = vx[b] - -k * ax;
-  vy[b] = vy[b] - -k * ay;
-  vx[a] = vx[a] + -k * ax;
-  vy[a] = vy[a] + -k * ay;
+  let ax = Math.cos(theta) * mag * -STICK_K;
+  let ay = Math.sin(theta) * mag * -STICK_K;
+  vx[b] -= ax;
+  vy[b] -= ay;
+  vx[a] += ax;
+  vy[a] += ay;
 }
 
 function adjust() {
@@ -195,13 +195,13 @@ function pushAway() {
     }
     for (var j=0; j<num_points; j++) {
       if (j === i || connected[j]) continue;
-      if (dead[i] > TOO_DEAD && dead[j] > TOO_DEAD) continue;
+      //if (dead[i] > TOO_DEAD && dead[j] > TOO_DEAD) continue;
       var d = push(i, j, PUSH_DIST);
       if (d < CLOSE_DIST) {
         close += 1;
       }
     }
-    nclose[i] = Math.max(close, nclose[i]);
+    nclose[i] = close; // Math.max(close, nclose[i]);
   }
 }
 
@@ -227,10 +227,10 @@ function edgegrow() {
   var eavg = esum / (edgelen.length + 1);
   for (var i=0; i<edgelen.length; i++) {
     if (age[i] > 100) continue;
-    if (nclose[edges[i][0]] > TOO_CLOSE && nclose[edges[i][1]] > TOO_CLOSE) {
+    if (nclose[edges[i][0]] > TOO_CROWDED && nclose[edges[i][1]] > TOO_CROWDED) {
       continue;
     }
-    edgelen[i] += .0008;
+    edgelen[i] += GROW_SPEED;
   }
 }
 
@@ -273,7 +273,7 @@ function edgesplit() {
     if (curlen[i] < MAX_LEN || edgelen[i] < MAX_LEN) {
       continue;
     }
-    if (nclose[edges[i][0]] > TOO_CLOSE && nclose[edges[i][1]] > TOO_CLOSE) {
+    if (nclose[edges[i][0]] > TOO_CROWDED && nclose[edges[i][1]] > TOO_CROWDED) {
       continue;
     }
     splitn(i, 2);
@@ -293,6 +293,7 @@ function run(n) {
   if (n > 0) {
     return requestAnimationFrame(run.bind(null, n-1));
   }
+  console.log('done');
 }
 
 function test(pts, n) {
@@ -301,16 +302,21 @@ function test(pts, n) {
   setTimeout(function () {
     let start = performance.now();
     for (var i=0; i<n; i++) {
-      tick();
+      step();
     }
     console.log(performance.now() - start);
-    console.log('done');
+    draw();
   }, 100);
 }
 
-init(10);
-draw();
-setTimeout(function () {
-  run(300);
-}, 500);
-//test(5, 300);
+const TEST = false;
+
+if (TEST) {
+  test(5, 300);
+} else {
+  init(10);
+  draw();
+  setTimeout(function () {
+    run(300);
+  }, 500);
+}
