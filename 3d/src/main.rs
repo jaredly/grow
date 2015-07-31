@@ -13,15 +13,15 @@ const DAMP: f32 = 0.85;
 const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.01;
 
-const MAX_LEN: f32 = 0.02;
+const MAX_LEN: f32 = 0.2;
 const TOO_CROWDED: i32 = 25; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 20;
 const DEAD_MOTION: f32 = 0.0001;
 const CLOSE_DIST: f32 = 0.35;
 const PUSH_DIST: f32 = 0.2;
-const GROW_SPEED: f32 = 0.0002;
-const MAX_SPEED: f32 = 0.0008;
+const GROW_SPEED: f32 = 0.002;
+const MAX_SPEED: f32 = 0.008;
 
 
 //let SHOW_POINTS = false;
@@ -134,7 +134,7 @@ impl State {
         } else {
             for i in 0..self.edges.len() {
                 if (self.edges[i].len > GROW_SPEED * 2.0) {
-                    self.edges[i].len -= GROW_SPEED;
+                    self.edges[i].len -= GROW_SPEED / 2.0;
                 }
             }
         }
@@ -143,7 +143,7 @@ impl State {
     fn edge_split(&mut self) {
         let len = self.edges.len();
         for i in 0..len {
-            if (self.edges[i].len < MAX_LEN || self.edges[i].curlen < MAX_LEN) {
+            if self.edges[i].len < MAX_LEN || self.edges[i].curlen < MAX_LEN {
                 continue;
             }
             let Edge{a, b, len, ..} = self.edges[i];
