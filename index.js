@@ -10,14 +10,14 @@ const STICK_K = 0.09;
 const AVOID_K = 0.01;
 
 const MAX_LEN = .02;
-const TOO_CROWDED = 25; // neighbors
+const TOO_CROWDED = 35; // neighbors
 const MIN_CROWD = 5;
 const TOO_DEAD = 20;
 const DEAD_MOTION = .0001;
 const CLOSE_DIST = .35;
 const PUSH_DIST = .2;
 const GROW_SPEED = .0002;
-const MAX_SPEED = .0008;
+const MAX_SPEED = .0046;
 
 let SHOW_POINTS = false;
 let COLOR_SCHEME = 'age';
