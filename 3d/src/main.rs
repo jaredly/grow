@@ -111,6 +111,7 @@ impl State {
             let p1 = self.pts[a as usize].pos;
             let p2 = self.pts[b as usize].pos;
             let mag = p1.dist(&p2);
+            self.edges[i].curlen = mag;
             let diff = (p2 - p1).normalize();
             self.pts[a as usize].vel = self.pts[a as usize].vel + diff * (len - mag) / 2.0 *
                 -STICK_K;
@@ -129,11 +130,39 @@ impl State {
         }
     }
 
+    fn edge_split(&mut self) {
+        let len = self.edges.len();
+        for i in 0..len {
+            if (self.edges[i].len < MAX_LEN || self.edges[i].curlen < MAX_LEN) {
+                continue;
+            }
+            let Edge{a, b, len, ..} = self.edges[i];
+            let npt = self.pts.len();
+            let npos = self.pts[a as usize].pos + (self.pts[b as usize].pos - self.pts[a as usize].pos) / 2.0;
+            self.pts.push(Node{
+                pos: npos,
+                vel: Vec3::new(0.0, 0.0, 0.0),
+                nclose: 0,
+                dead: 0,
+            });
+            let ob = self.edges[i].b;
+            self.edges.push(Edge{
+                len: len / 2.0,
+                curlen: 0.0,
+                age: 0,
+                a: npt as i32,
+                b: ob,
+            });
+            self.edges[i].len = len / 2.0;
+            self.edges[i].b = npt as i32;
+        }
+    }
+
     fn tick(&mut self) {
         self.adjust();
         //self.pushAway();
         self.edge_grow();
-        //self.edgeSplit();
+        self.edge_split();
         self.move_things();
     }
 
