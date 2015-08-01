@@ -14,7 +14,7 @@ const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.5;
-const TOO_CROWDED: usize = 54; // neighbors
+const TOO_CROWDED: usize = 34; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
@@ -114,13 +114,12 @@ impl State {
         let circumference = fnum * MAX_LEN * 0.2;
         let rad = circumference / 2.0 / f32::consts::PI;
         for i in 0..num {
-            //let off = (i as f32 / num * f32::consts::PI * 10).sin();
-            let mrad = rad;// + off;
+            let mrad = rad + (i as f32 / 20.0).sin();
             self.pts.push(Node {
                 pos: Pnt3{
                     x: (i as f32 * scale).cos() * mrad,
                     y: (i as f32 * scale).sin() * mrad,
-                    z: (i % 2) as f32, // mrad - rad, // 0.0,
+                    z: mrad - rad, // 0.0,
                 },
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
