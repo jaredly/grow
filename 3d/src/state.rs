@@ -14,7 +14,7 @@ const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.5;
-const TOO_CROWDED: usize = 34; // neighbors
+const TOO_CROWDED: usize = 44; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
