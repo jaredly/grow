@@ -47,7 +47,7 @@ pub trait DrawState {
 }
 
 pub struct State {
-    time: i32,
+    pub time: i32,
     pts: Vec<Node>,// = [Pnt3{x: 0.0, y: 0.0, z:0.0}; 1000];
     edges: Vec<Edge>,// = [Edge{a: 0, b: 0}; 1000];
     // num_pts: i32,// = 0;

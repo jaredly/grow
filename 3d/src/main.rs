@@ -42,11 +42,13 @@ fn main() {
     window.set_light(Light::StickToCamera);
 
     while window.render_with_camera(&mut camera) {
-        state.tick();
+        if state.time < 300 {
+            state.tick();
+            let dist = camera.dist();
+            camera.set_dist(dist + 0.04);
+        }
         window.draw_state(&mut state);
         let yaw = camera.yaw();
         camera.set_yaw(yaw + 0.004);
-        let dist = camera.dist();
-        camera.set_dist(dist + 0.04);
     }
 }
