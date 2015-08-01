@@ -84,7 +84,7 @@ impl State {
                 pos: Pnt3{
                     x: (i as f32 * scale).cos() * mrad,
                     y: (i as f32 * scale).sin() * mrad,
-                    z: 0.0,
+                    z: mrad - rad, // 0.0,
                 },
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
