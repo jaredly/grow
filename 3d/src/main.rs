@@ -15,11 +15,11 @@ const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.01;
 
 const MAX_LEN: f32 = 0.02;
-const TOO_CROWDED: usize = 35; // neighbors
+const TOO_CROWDED: usize = 45; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 20;
 const DEAD_MOTION: f32 = 0.001;
-const CLOSE_DIST: f32 = 0.35;
+const CLOSE_DIST: f32 = 0.55;
 const PUSH_DIST: f32 = 0.2;
 const GROW_SPEED: f32 = 0.0002;
 const MAX_SPEED: f32 = 0.0046;
@@ -110,7 +110,7 @@ impl State {
         for i in 0..self.edges.len() {
             self.edges[i].age += 1;
             let Edge{a, b, ..} = self.edges[i];
-            let color = hsl(self.edges[i].age % 180 + 180, 1.0, 0.6);
+            let color = hsl((self.edges[i].age as f32 / 4.0) % 180.0 + 180.0, 1.0, 0.6);
             window.draw_line(&self.pts[a].pos, &self.pts[b].pos, &color);
         }
     }
@@ -154,10 +154,19 @@ impl State {
                 if dist > PUSH_DIST {
                     continue;
                 }
+                if self.pts[i].dead > TOO_DEAD && self.pts[j].dead > TOO_DEAD {
+                    continue;
+                }
                 let diff = atob.normalize();
-                let magdiff = diff * (PUSH_DIST - dist) / 2.0;
-                self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K;
-                self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K;
+                let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
+                if self.pts[i].dead > TOO_DEAD {
+                    self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K ;
+                } else if self.pts[j].dead > TOO_DEAD {
+                    self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K ;
+                } else {
+                    self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K / 2.0;
+                    self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K / 2.0;
+                }
             }
             self.pts[i].nclose = close;
         }
@@ -173,6 +182,7 @@ impl State {
             let npt = self.pts.len();
             let npos = self.pts[a].pos + (self.pts[b].pos - self.pts[a].pos) / 2.0;
             let ob = self.edges[i].b;
+            self.edges[i].age = 0;
             self.pts.push(Node{
                 pos: npos,
                 vel: Vec3::new(0.0, 0.0, 0.0),
@@ -210,7 +220,7 @@ impl State {
             if self.pts[i].dead > TOO_DEAD {
                 continue;
             }
-            if (self.pts[i].nclose > TOO_CROWDED && self.pts[i].vel.sqnorm() < DEAD_MOTION) {
+            if self.pts[i].nclose > TOO_CROWDED && self.pts[i].vel.sqnorm() < DEAD_MOTION {
                 self.pts[i].dead += 1;
             } else {
                 self.pts[i].dead = 0;
@@ -221,26 +231,26 @@ impl State {
     }
 }
 
-fn hsl(H: usize, S: f32, L: f32) -> Pnt3<f32> {
-    let C = (1.0 - (2.0 * L - 1.0).abs()) * S;
-    let X = C * (1.0 - ((H as f32 / 60.0) % 2.0 - 1.0).abs());
-    let m = L - C / 2.0;
-    if (H < 60) {
-        return Pnt3::new(C, X, 0.0);
+fn hsl(h: f32, s: f32, l: f32) -> Pnt3<f32> {
+    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
+    let m = l - c / 2.0;
+    if h < 60.0 {
+        return Pnt3::new(c + m, x + m, 0.0 + m);
     }
-    if (H < 120) {
-        return Pnt3::new(X, C, 0.0);
+    if h < 120.0 {
+        return Pnt3::new(x + m, c + m, 0.0 + m);
     }
-    if (H < 180) {
-        return Pnt3::new(0.0, C, X);
+    if h < 180.0 {
+        return Pnt3::new(0.0 + m, c + m, x + m);
     }
-    if (H < 240) {
-        return Pnt3::new(0.0, X, C);
+    if h < 240.0 {
+        return Pnt3::new(0.0 + m, x + m, c + m);
     }
-    if (H < 300) {
-        return Pnt3::new(X, 0.0, C);
+    if h < 300.0 {
+        return Pnt3::new(x + m, 0.0 + m, c + m);
     }
-    Pnt3::new(C, 0.0, X)
+    Pnt3::new(c, 0.0, x)
 }
 
 fn main() {
