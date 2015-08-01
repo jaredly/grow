@@ -9,3 +9,6 @@ gl = "*"
 
 [dependencies.kiss3d]
 git = "https://github.com/sebcrozet/kiss3d"
+
+[profile.release]
+lto = true
