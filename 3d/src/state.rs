@@ -9,17 +9,17 @@ use na::{Vec3, Pnt3, FloatPnt, Norm};
 //const RANDOM = false;
 
 const TOLERANCE: f32 = 0.001;
-const DAMP: f32 = 0.15;
+const DAMP: f32 = 0.75;
 const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.5;
-const TOO_CROWDED: usize = 45; // neighbors
+const TOO_CROWDED: usize = 55; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
 const CLOSE_DIST: f32 = 4.0;
-const PUSH_DIST: f32 = 2.0;
+const PUSH_DIST: f32 = 0.8;
 const GROW_SPEED: f32 = 0.01;
 const MAX_SPEED: f32  = 0.02;
 
@@ -114,7 +114,7 @@ impl State {
         let circumference = fnum * MAX_LEN * 0.2;
         let rad = circumference / 2.0 / f32::consts::PI;
         for i in 0..num {
-            let mrad = rad + (i as f32 / 20.0).sin();
+            let mrad = rad;// + (i as f32 / 20.0).sin();
             self.pts.push(Node {
                 pos: Pnt3{
                     x: (i as f32 * scale).cos() * mrad,
