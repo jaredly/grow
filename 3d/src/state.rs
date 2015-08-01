@@ -114,12 +114,13 @@ impl State {
         let circumference = fnum * MAX_LEN * 0.2;
         let rad = circumference / 2.0 / f32::consts::PI;
         for i in 0..num {
-            let mrad = rad + (i as f32 / 20.0).sin();
+            //let off = (i as f32 / num * f32::consts::PI * 10).sin();
+            let mrad = rad;// + off;
             self.pts.push(Node {
                 pos: Pnt3{
                     x: (i as f32 * scale).cos() * mrad,
                     y: (i as f32 * scale).sin() * mrad,
-                    z: mrad - rad, // 0.0,
+                    z: (i % 2) as f32, // mrad - rad, // 0.0,
                 },
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
