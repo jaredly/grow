@@ -12,17 +12,17 @@ use kiss3d::light::Light;
 const TOLERANCE: f32 = 0.001;
 const DAMP: f32 = 0.75;
 const STICK_K: f32 = 0.09;
-const AVOID_K: f32 = 0.01;
+const AVOID_K: f32 = 0.08;
 
-const MAX_LEN: f32 = 0.02;
+const MAX_LEN: f32 = 0.005;
 const TOO_CROWDED: usize = 45; // neighbors
-const MIN_CROWD: i32 = 10;
+const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
-const CLOSE_DIST: f32 = 0.35;
-const PUSH_DIST: f32 = 0.2;
-const GROW_SPEED: f32 = 0.0002;
-const MAX_SPEED: f32 = 0.0046;
+const CLOSE_DIST: f32 = 0.95;
+const PUSH_DIST: f32 = 0.5;
+const GROW_SPEED: f32 = 0.00005;
+const MAX_SPEED: f32  = 0.0001;
 
 
 //let SHOW_POINTS = false;
@@ -84,7 +84,7 @@ impl State {
                 pos: Pnt3{
                     x: (i as f32 * scale).cos() * mrad,
                     y: (i as f32 * scale).sin() * mrad,
-                    z: mrad - rad,
+                    z: 0.0,
                 },
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
@@ -110,7 +110,7 @@ impl State {
         for i in 0..self.edges.len() {
             self.edges[i].age += 1;
             let Edge{a, b, ..} = self.edges[i];
-            let color = hsl((self.edges[i].age as f32 / 0.5) % 180.0 + 180.0, 1.0, 0.6);
+            let color = hsl((self.edges[i].age as f32 / 4.0) % 180.0 + 180.0, 1.0, 0.6);
             window.draw_line(&self.pts[a].pos, &self.pts[b].pos, &color);
         }
     }
