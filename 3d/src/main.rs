@@ -17,9 +17,9 @@ const AVOID_K: f32 = 0.01;
 const MAX_LEN: f32 = 0.02;
 const TOO_CROWDED: usize = 45; // neighbors
 const MIN_CROWD: i32 = 5;
-const TOO_DEAD: i32 = 20;
-const DEAD_MOTION: f32 = 0.001;
-const CLOSE_DIST: f32 = 0.55;
+const TOO_DEAD: i32 = 100;
+const DEAD_MOTION: f32 = 0.0001;
+const CLOSE_DIST: f32 = 0.35;
 const PUSH_DIST: f32 = 0.2;
 const GROW_SPEED: f32 = 0.0002;
 const MAX_SPEED: f32 = 0.0046;
@@ -216,11 +216,10 @@ impl State {
 
     fn move_things(&mut self) {
         for i in 0..self.pts.len() {
-
             if self.pts[i].dead > TOO_DEAD {
                 continue;
             }
-            if self.pts[i].nclose > TOO_CROWDED && self.pts[i].vel.sqnorm() < DEAD_MOTION {
+            if self.pts[i].nclose > TOO_CROWDED && self.pts[i].vel.norm() < DEAD_MOTION {
                 self.pts[i].dead += 1;
             } else {
                 self.pts[i].dead = 0;
