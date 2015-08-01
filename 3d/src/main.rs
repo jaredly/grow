@@ -24,7 +24,7 @@ impl DrawState for Window {
 
 fn main() {
     let mut state = State::init();
-    state.start(20);
+    state.start(10);
 
     let mut window = Window::new("Grow");
     unsafe{
@@ -42,13 +42,13 @@ fn main() {
     window.set_light(Light::StickToCamera);
 
     while window.render_with_camera(&mut camera) {
-        if state.time < 300 {
+        if state.time < 900 {
             state.tick();
             let dist = camera.dist();
             camera.set_dist(dist + 0.04);
+            let yaw = camera.yaw();
+            camera.set_yaw(yaw + 0.004);
         }
         window.draw_state(&mut state);
-        let yaw = camera.yaw();
-        camera.set_yaw(yaw + 0.004);
     }
 }
