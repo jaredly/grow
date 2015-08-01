@@ -13,15 +13,15 @@ const DAMP: f32 = 0.15;
 const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
-const MAX_LEN: f32 = 0.005;
-const TOO_CROWDED: usize = 25; // neighbors
+const MAX_LEN: f32 = 0.5;
+const TOO_CROWDED: usize = 45; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
 const CLOSE_DIST: f32 = 4.0;
 const PUSH_DIST: f32 = 2.0;
-const GROW_SPEED: f32 = 0.0001;
-const MAX_SPEED: f32  = 0.0002;
+const GROW_SPEED: f32 = 0.01;
+const MAX_SPEED: f32  = 0.02;
 
 
 #[derive(Copy, Clone)]
@@ -109,8 +109,6 @@ impl State {
     }
 
     pub fn start(&mut self, num: usize) {
-        // self.num_pts = num;
-
         let fnum = num as f32;
         let scale = 2.0 * f32::consts::PI / fnum;
         let circumference = fnum * MAX_LEN * 0.2;

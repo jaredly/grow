@@ -22,28 +22,6 @@ impl DrawState for Window {
     }
 }
 
-fn hsl(h: f32, s: f32, l: f32) -> Pnt3<f32> {
-    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
-    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
-    let m = l - c / 2.0;
-    if h < 60.0 {
-        return Pnt3::new(c + m, x + m, 0.0 + m);
-    }
-    if h < 120.0 {
-        return Pnt3::new(x + m, c + m, 0.0 + m);
-    }
-    if h < 180.0 {
-        return Pnt3::new(0.0 + m, c + m, x + m);
-    }
-    if h < 240.0 {
-        return Pnt3::new(0.0 + m, x + m, c + m);
-    }
-    if h < 300.0 {
-        return Pnt3::new(x + m, 0.0 + m, c + m);
-    }
-    Pnt3::new(c, 0.0, x)
-}
-
 fn main() {
     let mut state = State::init();
     state.start(25);
@@ -66,7 +44,7 @@ fn main() {
     while window.render_with_camera(&mut camera) {
         state.tick();
         window.draw_state(&mut state);
-        let yaw = camera.yaw();
-        camera.set_yaw(yaw + 0.004);
+        // let yaw = camera.yaw();
+        // camera.set_yaw(yaw + 0.004);
     }
 }
