@@ -135,7 +135,12 @@ impl State {
             if self.pts[a].nclose > TOO_CROWDED && self.pts[b].nclose > TOO_CROWDED {
                 continue;
             }
-            self.edges[i].len += GROW_SPEED;
+            let least = (self.pts[a].nclose as f32).min(self.pts[b].nclose as f32);
+            if least <= MIN_CROWD as f32 {
+                self.edges[i].len += MAX_SPEED;
+            } else {
+                self.edges[i].len += GROW_SPEED + (MAX_SPEED - GROW_SPEED) * (least - MIN_CROWD as f32) / (TOO_CROWDED as f32 - MIN_CROWD as f32);
+            }
         }
     }
 
