@@ -15,11 +15,11 @@ const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.01;
 
 const MAX_LEN: f32 = 0.02;
-const TOO_CROWDED: usize = 25; // neighbors
+const TOO_CROWDED: usize = 35; // neighbors
 const MIN_CROWD: i32 = 10;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
-const CLOSE_DIST: f32 = 0.55;
+const CLOSE_DIST: f32 = 0.45;
 const PUSH_DIST: f32 = 0.2;
 const GROW_SPEED: f32 = 0.0002;
 const MAX_SPEED: f32 = 0.0046;
