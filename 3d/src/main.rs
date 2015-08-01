@@ -35,7 +35,7 @@ fn main() {
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     }
 
-    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -3.0), na::orig());
+    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), na::orig());
 
     window.set_background_color(1.0, 1.0, 1.0);
 
@@ -44,7 +44,9 @@ fn main() {
     while window.render_with_camera(&mut camera) {
         state.tick();
         window.draw_state(&mut state);
-        // let yaw = camera.yaw();
-        // camera.set_yaw(yaw + 0.004);
+        let yaw = camera.yaw();
+        camera.set_yaw(yaw + 0.004);
+        let dist = camera.dist();
+        camera.set_dist(dist + 0.04);
     }
 }
