@@ -7,6 +7,7 @@ use std::f32;
 use na::{Vec3, Pnt3, FloatPnt, Norm};
 use kiss3d::window::Window;
 use kiss3d::light::Light;
+use kiss3d::camera::ArcBall;
 
 
 const TOLERANCE: f32 = 0.001;
@@ -21,8 +22,8 @@ const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
 const CLOSE_DIST: f32 = 4.0;
 const PUSH_DIST: f32 = 2.0;
-const GROW_SPEED: f32 = 0.00005;
-const MAX_SPEED: f32  = 0.0001;
+const GROW_SPEED: f32 = 0.0001;
+const MAX_SPEED: f32  = 0.0002;
 
 
 //let SHOW_POINTS = false;
@@ -110,7 +111,8 @@ impl State {
         for i in 0..self.edges.len() {
             self.edges[i].age += 1;
             let Edge{a, b, ..} = self.edges[i];
-            let color = hsl((self.edges[i].age as f32 / 4.0) % 180.0 + 180.0, 1.0, 0.6);
+            //let color = hsl((self.edges[i].age as f32 / 4.0) % 180.0 + 180.0, 1.0, 0.6);
+            let color = hsl((self.edges[i].age as f32 / self.time as f32) * 180.0 + 180.0, 1.0, 0.6);
             window.draw_line(&self.pts[a].pos, &self.pts[b].pos, &color);
         }
     }
@@ -273,12 +275,17 @@ fn main() {
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     }
 
+    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -3.0), na::orig());
+
     window.set_background_color(1.0, 1.0, 1.0);
 
     window.set_light(Light::StickToCamera);
 
-    while window.render() {
+    while window.render_with_camera(&mut camera) {
         state.tick();
         state.draw(&mut window);
+        let yaw = camera.yaw();
+        camera.set_yaw(yaw + 0.004);
+        // window.scene_mut().prepend_to_local_rotation(&Vec3::new(0.0f32, 0.014, 0.0));
     }
 }
