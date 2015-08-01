@@ -110,7 +110,7 @@ impl State {
         for i in 0..self.edges.len() {
             self.edges[i].age += 1;
             let Edge{a, b, ..} = self.edges[i];
-            let color = hsl((self.edges[i].age as f32 / 4.0) % 180.0 + 180.0, 1.0, 0.6);
+            let color = hsl((self.edges[i].age as f32 / 0.5) % 180.0 + 180.0, 1.0, 0.6);
             window.draw_line(&self.pts[a].pos, &self.pts[b].pos, &color);
         }
     }
