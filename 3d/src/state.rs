@@ -14,7 +14,7 @@ const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.5;
-const TOO_CROWDED: usize = 65; // neighbors
+const TOO_CROWDED: usize = 54; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
@@ -137,6 +137,7 @@ impl State {
                 curlen: self.pts[i].pos.dist(&self.pts[((i + 1) % num)].pos),
                 age: 0,
             });
+            /*
             self.edges.push(Edge{
                 a: i,
                 b: (i + 2) % num,
@@ -144,6 +145,7 @@ impl State {
                 curlen: self.pts[i].pos.dist(&self.pts[((i + 2) % num)].pos),
                 age: 0,
             });
+            */
         }
     }
 

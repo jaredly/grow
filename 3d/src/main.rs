@@ -24,7 +24,7 @@ impl DrawState for Window {
 
 fn main() {
     let mut state = State::init();
-    state.start(5);
+    state.start(20);
 
     let mut window = Window::new("Grow");
     unsafe{
