@@ -10,7 +10,7 @@ use kiss3d::light::Light;
 
 
 const TOLERANCE: f32 = 0.001;
-const DAMP: f32 = 0.75;
+const DAMP: f32 = 0.35;
 const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
