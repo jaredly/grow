@@ -12,15 +12,15 @@ use kiss3d::light::Light;
 const TOLERANCE: f32 = 0.001;
 const DAMP: f32 = 0.75;
 const STICK_K: f32 = 0.09;
-const AVOID_K: f32 = 0.08;
+const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.005;
-const TOO_CROWDED: usize = 45; // neighbors
+const TOO_CROWDED: usize = 25; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
-const CLOSE_DIST: f32 = 0.95;
-const PUSH_DIST: f32 = 0.5;
+const CLOSE_DIST: f32 = 3.0;
+const PUSH_DIST: f32 = 2.0;
 const GROW_SPEED: f32 = 0.00005;
 const MAX_SPEED: f32  = 0.0001;
 
@@ -131,7 +131,10 @@ impl State {
 
     fn edge_grow(&mut self) {
         for i in 0..self.edges.len() {
-            let Edge{a, b, ..} = self.edges[i];
+            let Edge{a, b, len, ..} = self.edges[i];
+            if len > MAX_LEN {
+                continue;
+            }
             if self.pts[a].nclose > TOO_CROWDED && self.pts[b].nclose > TOO_CROWDED {
                 continue;
             }
