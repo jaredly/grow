@@ -8,20 +8,21 @@ use na::{Vec3, Pnt3, FloatPnt, Norm};
 use kiss3d::window::Window;
 use kiss3d::light::Light;
 
+
 const TOLERANCE: f32 = 0.001;
-const DAMP: f32 = 0.85;
+const DAMP: f32 = 0.75;
 const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.01;
 
-const MAX_LEN: f32 = 0.1;
-const TOO_CROWDED: i32 = 25; // neighbors
+const MAX_LEN: f32 = 0.02;
+const TOO_CROWDED: usize = 35; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 20;
-const DEAD_MOTION: f32 = 0.0001;
+const DEAD_MOTION: f32 = 0.001;
 const CLOSE_DIST: f32 = 0.35;
 const PUSH_DIST: f32 = 0.2;
-const GROW_SPEED: f32 = 0.001;
-const MAX_SPEED: f32 = 0.004;
+const GROW_SPEED: f32 = 0.0002;
+const MAX_SPEED: f32 = 0.0046;
 
 
 //let SHOW_POINTS = false;
@@ -30,18 +31,20 @@ const MAX_SPEED: f32 = 0.004;
 
 #[derive(Copy, Clone)]
 struct Edge {
-    a: i32,
-    b: i32,
+    a: usize,
+    b: usize,
     len: f32,
     curlen: f32,
-    age: i32,
+    age: usize,
 }
 
 struct Node {
     pos: Pnt3<f32>,
     vel: Vec3<f32>,
-    nclose: i32,
+    nclose: usize,
     dead: i32,
+    left: usize,
+    right: usize,
 }
 
 struct State {
@@ -68,7 +71,7 @@ impl State {
         }
     }
 
-    fn start(&mut self, num: i32) {
+    fn start(&mut self, num: usize) {
         // self.num_pts = num;
 
         let fnum = num as f32;
@@ -76,15 +79,18 @@ impl State {
         let circumference = fnum * MAX_LEN * 0.2;
         let rad = circumference / 2.0 / f32::consts::PI;
         for i in 0..num {
+            let mrad = rad + (i as f32 / 20.0).sin();
             self.pts.push(Node {
                 pos: Pnt3{
-                    x: (i as f32 * scale).cos() * rad,
-                    y: (i as f32 * scale).sin() * rad,
+                    x: (i as f32 * scale).cos() * mrad,
+                    y: (i as f32 * scale).sin() * mrad,
                     z: 0.0,
                 },
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
                 dead: 0,
+                left: if i == 0 {num - 1} else {i - 1},
+                right: (i+1) % num,
             });
         }
 
@@ -93,50 +99,67 @@ impl State {
                 a: i,
                 b: (i + 1) % num,
                 len: MAX_LEN / 2.0,
-                curlen: self.pts[i as usize].pos.dist(&self.pts[((i + 1) % num) as usize].pos),
+                curlen: self.pts[i].pos.dist(&self.pts[((i + 1) % num)].pos),
                 age: 0,
             });
         }
     }
 
-    fn draw(&self, window: &mut Window) {
-        let color = Pnt3::new(0.5, 0.1, 1.0);
+    fn draw(&mut self, window: &mut Window) {
+        //let color = Pnt3::new(0.5, 0.1, 1.0);
         for i in 0..self.edges.len() {
+            self.edges[i].age += 1;
             let Edge{a, b, ..} = self.edges[i];
-            window.draw_line(&self.pts[a as usize].pos, &self.pts[b as usize].pos, &color);
+            let color = hsl(self.edges[i].age % 180 + 180, 1.0, 0.6);
+            window.draw_line(&self.pts[a].pos, &self.pts[b].pos, &color);
         }
     }
 
     fn adjust(&mut self) {
         for i in 0..self.edges.len() {
             let Edge{a, b, len, ..} = self.edges[i];
-            let p1 = self.pts[a as usize].pos;
-            let p2 = self.pts[b as usize].pos;
+            let p1 = self.pts[a].pos;
+            let p2 = self.pts[b].pos;
             let mag = p1.dist(&p2);
             self.edges[i].curlen = mag;
             let diff = (p2 - p1).normalize();
-            self.pts[a as usize].vel = self.pts[a as usize].vel + diff * (len - mag) / 2.0 *
-                -STICK_K;
-            self.pts[b as usize].vel = self.pts[b as usize].vel - diff * (len - mag) / 2.0 *
-                -STICK_K;
-
-            //let theta = na::angle_between(&p1, &p2); //p1.angle_to(&p2);
-            //let df = self.pts[a as usize].dist(self.pts[b as usize]);
-            //let an = self.pts[a as usize].
+            let mdiff = diff * (len - mag) / 2.0 * -STICK_K;
+            self.pts[a].vel = self.pts[a].vel + mdiff;
+            self.pts[b].vel = self.pts[b].vel - mdiff;
         }
     }
 
     fn edge_grow(&mut self) {
-        if (self.time / 300) % 2 == 0 {
-            for i in 0..self.edges.len() {
-                self.edges[i].len += GROW_SPEED;
+        for i in 0..self.edges.len() {
+            let Edge{a, b, ..} = self.edges[i];
+            if self.pts[a].nclose > TOO_CROWDED && self.pts[b].nclose > TOO_CROWDED {
+                continue;
             }
-        } else {
-            for i in 0..self.edges.len() {
-                if (self.edges[i].len > GROW_SPEED * 2.0) {
-                    self.edges[i].len -= GROW_SPEED / 2.0;
+            self.edges[i].len += GROW_SPEED;
+        }
+    }
+
+    fn push_away(&mut self) {
+        for i in 0..self.pts.len() {
+            let mut close: usize = 0;
+            for j in 0..self.pts.len() {
+                if j == i || self.pts[i].left == j || self.pts[i].right == j {
+                    continue;
                 }
+                let atob = self.pts[j].pos - self.pts[i].pos;
+                let dist = atob.norm();
+                if dist < CLOSE_DIST {
+                    close += 1;
+                }
+                if dist > PUSH_DIST {
+                    continue;
+                }
+                let diff = atob.normalize();
+                let magdiff = diff * (PUSH_DIST - dist) / 2.0;
+                self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K;
+                self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K;
             }
+            self.pts[i].nclose = close;
         }
     }
 
@@ -148,30 +171,34 @@ impl State {
             }
             let Edge{a, b, len, ..} = self.edges[i];
             let npt = self.pts.len();
-            let npos = self.pts[a as usize].pos + (self.pts[b as usize].pos - self.pts[a as usize].pos) / 2.0;
+            let npos = self.pts[a].pos + (self.pts[b].pos - self.pts[a].pos) / 2.0;
+            let ob = self.edges[i].b;
             self.pts.push(Node{
                 pos: npos,
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
                 dead: 0,
+                left: self.edges[i].a,
+                right: ob,
             });
-            let ob = self.edges[i].b;
+            self.pts[a].right = npt;
+            self.pts[b].left = npt;
             self.edges.push(Edge{
                 len: len / 2.0,
                 curlen: 0.0,
                 age: 0,
-                a: npt as i32,
+                a: npt,
                 b: ob,
             });
             self.edges[i].len = len / 2.0;
-            self.edges[i].b = npt as i32;
+            self.edges[i].b = npt;
         }
     }
 
     fn tick(&mut self) {
         self.time += 1;
         self.adjust();
-        //self.pushAway();
+        self.push_away();
         self.edge_grow();
         self.edge_split();
         self.move_things();
@@ -179,19 +206,50 @@ impl State {
 
     fn move_things(&mut self) {
         for i in 0..self.pts.len() {
+
+            if self.pts[i].dead > TOO_DEAD {
+                continue;
+            }
+            if (self.pts[i].nclose > TOO_CROWDED && self.pts[i].vel.sqnorm() < DEAD_MOTION) {
+                self.pts[i].dead += 1;
+            } else {
+                self.pts[i].dead = 0;
+            }
             self.pts[i].vel = self.pts[i].vel * DAMP;
             self.pts[i].pos = self.pts[i].pos + self.pts[i].vel;
         }
     }
 }
 
+fn hsl(H: usize, S: f32, L: f32) -> Pnt3<f32> {
+    let C = (1.0 - (2.0 * L - 1.0).abs()) * S;
+    let X = C * (1.0 - ((H as f32 / 60.0) % 2.0 - 1.0).abs());
+    let m = L - C / 2.0;
+    if (H < 60) {
+        return Pnt3::new(C, X, 0.0);
+    }
+    if (H < 120) {
+        return Pnt3::new(X, C, 0.0);
+    }
+    if (H < 180) {
+        return Pnt3::new(0.0, C, X);
+    }
+    if (H < 240) {
+        return Pnt3::new(0.0, X, C);
+    }
+    if (H < 300) {
+        return Pnt3::new(X, 0.0, C);
+    }
+    Pnt3::new(C, 0.0, X)
+}
+
 fn main() {
     let mut state = State::init();
-    state.start(10);
+    state.start(25);
 
     let mut window = Window::new("Grow");
     unsafe{
-        gl::LineWidth(1.0);
+        gl::LineWidth(15.0);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
         gl::Enable(gl::BLEND);

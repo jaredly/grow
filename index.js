@@ -210,29 +210,7 @@ function pushAway() {
 }
 
 function edgegrow() {
-  /*
-  var edst = [];
-  var esum = 0;
-  var emax = 0;
   for (var i=0; i<edgelen.length; i++) {
-    let a = edges[i][0];
-    let b = edges[i][1];
-    let dx = x[b] - x[a];
-    let dy = y[b] - y[a];
-    let cx = x[a] + dx/2;
-    let cy = y[a] + dy/2;
-    let dcenter = Math.sqrt(cx*cx + cy*cy);
-    curlen[i] = Math.sqrt(dx*dx + dy*dy);
-    edst.push(dcenter);
-    esum += dcenter;
-    if (dcenter > emax) {
-      emax = dcenter;
-    }
-  }
-  var eavg = esum / (edgelen.length + 1);
-  */
-  for (var i=0; i<edgelen.length; i++) {
-    // if (age[i] > 100) continue;
     if (nclose[edges[i][0]] > TOO_CROWDED && nclose[edges[i][1]] > TOO_CROWDED) {
       continue;
     }
