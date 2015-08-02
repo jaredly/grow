@@ -51,8 +51,6 @@ pub struct State {
     pub time: i32,
     pts: Vec<Node>,// = [Pnt3{x: 0.0, y: 0.0, z:0.0}; 1000];
     edges: Vec<Edge>,// = [Edge{a: 0, b: 0}; 1000];
-    // num_pts: i32,// = 0;
-    // num_edges: i32,// = 0;
 }
 
 fn hsl(h: f32, s: f32, l: f32) -> Pnt3<f32> {
@@ -84,8 +82,6 @@ impl State {
             time: 0,
             pts: vec![],
             edges: vec![],
-            // num_pts: 0,
-            // num_edges: 0,
         }
     }
 
@@ -166,9 +162,19 @@ impl State {
     fn adjust(&mut self) {
         for i in 0..self.edges.len() {
             let Edge{a, b, len, ..} = self.edges[i];
+            /* Worse perf!
+            if self.pts[a].dead > TOO_DEAD && self.pts[b].dead > TOO_DEAD {
+                continue;
+            }
+            */
             let p1 = self.pts[a].pos;
             let p2 = self.pts[b].pos;
             let mag = p1.dist(&p2);
+            /* Worse perf!
+            if (len - mag).abs() < TOLERANCE {
+                continue;
+            }
+            */
             self.edges[i].curlen = mag;
             let diff = (p2 - p1).normalize();
             let mdiff = diff * (len - mag) / 2.0 * -STICK_K;
