@@ -12,7 +12,6 @@ use kiss3d::light::Light;
 use kiss3d::camera::ArcBall;
 use state::{State, DrawState};
 use bincode::SizeLimit;
-use std::io::prelude::*;
 use std::fs::File;
 
 mod state;
@@ -63,7 +62,7 @@ impl DrawState for Window {
 
 fn write_out(state: &State, outfile: String) {
     let mut out = File::create(outfile).unwrap();
-    let result = bincode::encode_into(&state, &mut out, SizeLimit::Infinite);
+    bincode::encode_into(&state, &mut out, SizeLimit::Infinite).unwrap();
 }
 
 fn grow(window: &mut Window, max_time: i32, outfile: String) {
@@ -121,7 +120,7 @@ fn make(max_time: i32, outfile: String) {
 
 fn info(infile: String) {
     let mut file = File::open(infile).unwrap();
-    let mut state: State = bincode::decode_from(&mut file, SizeLimit::Infinite).unwrap();
+    let state: State = bincode::decode_from(&mut file, SizeLimit::Infinite).unwrap();
 
     state.print_info();
 }
@@ -129,8 +128,7 @@ fn info(infile: String) {
 fn just_once() {
     let mut state = State::init();
     state.start(10);
-    for i in 0..50 {
-        state.tick();
+    for _ in 0..100 {
         state.tick();
     }
 }

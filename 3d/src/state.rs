@@ -240,9 +240,9 @@ impl State {
         for i in 0..self.pts.len() {
             let mut close: usize = 0;
             let Pnt3{x, y, z} = self.pts[i].pos;
-            let xp = ((x - minx) / CLOSE_DIST / 2.0);
-            let yp = ((y - miny) / CLOSE_DIST / 2.0);
-            let zp = ((z - minz) / CLOSE_DIST / 2.0);
+            let xp = (x - minx) / CLOSE_DIST / 2.0;
+            let yp = (y - miny) / CLOSE_DIST / 2.0;
+            let zp = (z - minz) / CLOSE_DIST / 2.0;
             let xn = xp as usize;
             let yn = yp as usize;
             let zn = zp as usize;
