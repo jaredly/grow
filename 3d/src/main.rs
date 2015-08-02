@@ -27,6 +27,7 @@ static USAGE: &'static str = "
 Usage:
   grow show <maxtime> <outfile>
   grow make <maxtime> <outfile>
+  grow once
   grow info <infile>
   grow display <infile>
   grow (-h | --help)
@@ -46,6 +47,7 @@ struct Args {
     cmd_info: bool,
     cmd_make: bool,
     cmd_show: bool,
+    cmd_once: bool,
 }
 
 impl DrawState for Window {
@@ -124,12 +126,25 @@ fn info(infile: String) {
     state.print_info();
 }
 
+fn just_once() {
+    let mut state = State::init();
+    state.start(10);
+    for i in 0..50 {
+        state.tick();
+        state.tick();
+    }
+}
+
 fn main() {
     let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.decode())
         .unwrap_or_else(|e| e.exit());
     println!("{:?}", args);
 
+    if args.cmd_once {
+        just_once();
+        return;
+    }
     if args.cmd_make {
         make(args.arg_maxtime.unwrap(), args.arg_outfile.unwrap());
         return;

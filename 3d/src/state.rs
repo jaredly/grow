@@ -3,6 +3,7 @@
 extern crate nalgebra as na;
 use std::f32;
 use na::{Vec3, Pnt3, FloatPnt, Norm};
+use std::collections::HashMap;
 
 //let SHOW_POINTS = false;
 //let COLOR_SCHEME = 'age';
@@ -203,36 +204,136 @@ impl State {
     }
 
     fn push_away(&mut self) {
+        let mut bins: HashMap<(usize, usize, usize), Vec<usize>> = HashMap::new();
+        let mut minx = 0.0;
+        let mut miny = 0.0;
+        let mut minz = 0.0;
+        // TODO figure out: would using the max to reduce false-reads at the top-end of the
+        // help at all?
+        //let mut maxx = 0.0;
+        //let mut maxy = 0.0;
+        //let mut maxz = 0.0;
+        for i in 0..self.pts.len() {
+            let Pnt3{x, y, z} = self.pts[i].pos;
+            if x < minx {minx = x;}
+            //if x > maxx {maxx = x;}
+            if y < miny {miny = y;}
+            //if y > maxy {maxy = y;}
+            if z < minz {minz = z;}
+            //if z > maxz {maxz = z;}
+        }
+        //let xscale = (maxx - minx) / CLOSE_DIST;
+        //let yscale = (maxy - miny) / CLOSE_DIST;
+        //let zscale = (maxy - minz) / CLOSE_DIST;
+        for i in 0..self.pts.len() {
+            let Pnt3{x, y, z} = self.pts[i].pos;
+            let pos = (
+                ((x - minx) / CLOSE_DIST / 2.0).floor() as usize,
+                ((y - miny) / CLOSE_DIST / 2.0).floor() as usize,
+                ((z - minz) / CLOSE_DIST / 2.0).floor() as usize,
+            );
+            let val = bins.entry(pos).or_insert(vec![]);
+            val.push(i);
+        }
+        //println!("Min {} {} {}", minx, miny, minz);
+        //println!("Bin: {:?}", bins);
         for i in 0..self.pts.len() {
             let mut close: usize = 0;
-            for j in 0..self.pts.len() {
-                if j == i || self.pts[i].left == j || self.pts[i].right == j {
-                    continue;
+            let Pnt3{x, y, z} = self.pts[i].pos;
+            let xp = ((x - minx) / CLOSE_DIST / 2.0);
+            let yp = ((y - miny) / CLOSE_DIST / 2.0);
+            let zp = ((z - minz) / CLOSE_DIST / 2.0);
+            let xn = xp as usize;
+            let yn = yp as usize;
+            let zn = zp as usize;
+            let nx = if xp.round() > xp {xn + 1} else if xn > 0 {xn - 1} else {xn};
+            let ny = if yp.round() > yp {yn + 1} else if yn > 0 {yn - 1} else {yn};
+            let nz = if zp.round() > zp {zn + 1} else if zn > 0 {zn - 1} else {zn};
+
+            match bins.get(&(xn, yn, zn)) {
+                Some(arr) => {
+                    for j in arr {close += self.push_two(i, *j);}
+                },
+                None => {}
+            }
+            if nx != xn {
+                match bins.get(&(nx, yn, zn)) {
+                Some(arr) => {
+                    for j in arr {close += self.push_two(i, *j);}
+                },
+                    None => {}
                 }
-                let atob = self.pts[j].pos - self.pts[i].pos;
-                let dist = atob.norm();
-                if dist < CLOSE_DIST {
-                    close += 1;
+                if ny != yn {
+                    match bins.get(&(nx, ny, zn)) {
+                Some(arr) => {
+                    for j in arr {close += self.push_two(i, *j);}
+                },
+                        None => {}
+                    }
+                    if nz != zn {
+                        match bins.get(&(nx, ny, nz)) {
+                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
+                            None => {}
+                        }
+                    }
                 }
-                if dist > PUSH_DIST {
-                    continue;
-                }
-                if self.pts[i].dead > TOO_DEAD && self.pts[j].dead > TOO_DEAD {
-                    continue;
-                }
-                let diff = atob.normalize();
-                let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
-                if self.pts[i].dead > TOO_DEAD {
-                    self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K ;
-                } else if self.pts[j].dead > TOO_DEAD {
-                    self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K ;
-                } else {
-                    self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K / 2.0;
-                    self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K / 2.0;
+                if nz != zn {
+                    match bins.get(&(nx, yn, nz)) {
+                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
+                        None => {}
+                    }
                 }
             }
+            if ny != yn {
+                match bins.get(&(xn, ny, zn)) {
+                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
+                    None => {}
+                }
+                if nz != zn {
+                    match bins.get(&(xn, ny, nz)) {
+                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
+                        None => {}
+                    }
+                }
+            }
+            if nz != zn {
+                match bins.get(&(xn, yn, nz)) {
+                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
+                    None => {}
+                }
+            }
+            /*
+            for j in 0..self.pts.len() {
+                close += self.push_two(i, j);
+            }
+            */
             self.pts[i].nclose = close;
         }
+    }
+
+    fn push_two(&mut self, i: usize, j: usize) -> usize {
+        if j == i || self.pts[i].left == j || self.pts[i].right == j {
+            return 0;
+        }
+        let atob = self.pts[j].pos - self.pts[i].pos;
+        let dist = atob.norm();
+        if dist > PUSH_DIST {
+            return if dist < CLOSE_DIST {1} else {0}
+        }
+        if self.pts[i].dead > TOO_DEAD && self.pts[j].dead > TOO_DEAD {
+            return 1;
+        }
+        let diff = atob.normalize();
+        let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
+        if self.pts[i].dead > TOO_DEAD {
+            self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K ;
+        } else if self.pts[j].dead > TOO_DEAD {
+            self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K ;
+        } else {
+            self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K / 2.0;
+            self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K / 2.0;
+        }
+        return 1;
     }
 
     fn edge_split(&mut self) {
