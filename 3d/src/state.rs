@@ -89,6 +89,10 @@ impl State {
         }
     }
 
+    pub fn print_info(&self) {
+        println!("Edges: {}, Points: {}, time: {}", self.edges.len(), self.pts.len(), self.time);
+    }
+
     #[inline]
     pub fn edge_color(&self, i: usize, off: f32) -> Pnt3<f32> {
         hsl(((self.edges[i].age as f32 / self.time as f32) * 180.0 + off) % 360.0, 1.0, 0.6)

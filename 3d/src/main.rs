@@ -27,6 +27,7 @@ static USAGE: &'static str = "
 Usage:
   grow show <maxtime> <outfile>
   grow make <maxtime> <outfile>
+  grow info <infile>
   grow display <infile>
   grow (-h | --help)
   grow --version
@@ -42,6 +43,7 @@ struct Args {
     arg_outfile: Option<String>,
     arg_infile: Option<String>,
     cmd_display: bool,
+    cmd_info: bool,
     cmd_make: bool,
     cmd_show: bool,
 }
@@ -115,6 +117,13 @@ fn make(max_time: i32, outfile: String) {
     write_out(&state, outfile.clone());
 }
 
+fn info(infile: String) {
+    let mut file = File::open(infile).unwrap();
+    let mut state: State = bincode::decode_from(&mut file, SizeLimit::Infinite).unwrap();
+
+    state.print_info();
+}
+
 fn main() {
     let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.decode())
@@ -123,6 +132,11 @@ fn main() {
 
     if args.cmd_make {
         make(args.arg_maxtime.unwrap(), args.arg_outfile.unwrap());
+        return;
+    }
+    if args.cmd_info {
+        println!("Info");
+        info(args.arg_infile.unwrap());
         return;
     }
 
