@@ -6,6 +6,10 @@ authors = ["jaredly"]
 [dependencies]
 nalgebra = "*"
 gl = "*"
+rustc-serialize = "0.3"
+bincode = "*"
+docopt = "0.6.69"
+time = "0.1"
 
 [dependencies.kiss3d]
 git = "https://github.com/sebcrozet/kiss3d"

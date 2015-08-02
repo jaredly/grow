@@ -23,8 +23,7 @@ const PUSH_DIST: f32 = 0.8;
 const GROW_SPEED: f32 = 0.01;
 const MAX_SPEED: f32  = 0.02;
 
-
-#[derive(Copy, Clone)]
+#[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Edge {
     pub a: usize,
     pub b: usize,
@@ -33,6 +32,7 @@ struct Edge {
     curlen: f32,
 }
 
+#[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Node {
     pos: Pnt3<f32>,
     vel: Vec3<f32>,
@@ -43,9 +43,10 @@ struct Node {
 }
 
 pub trait DrawState {
-    fn draw_state(&mut self, state: &mut State);
+    fn draw_state(&mut self, state: &mut State, off: f32);
 }
 
+#[derive(RustcEncodable, RustcDecodable, PartialEq)]
 pub struct State {
     pub time: i32,
     pts: Vec<Node>,// = [Pnt3{x: 0.0, y: 0.0, z:0.0}; 1000];
@@ -89,8 +90,8 @@ impl State {
     }
 
     #[inline]
-    pub fn edge_color(&self, i: usize) -> Pnt3<f32> {
-        hsl((self.edges[i].age as f32 / self.time as f32) * 180.0 + 180.0, 1.0, 0.6)
+    pub fn edge_color(&self, i: usize, off: f32) -> Pnt3<f32> {
+        hsl(((self.edges[i].age as f32 / self.time as f32) * 180.0 + off) % 360.0, 1.0, 0.6)
     }
 
     #[inline]
