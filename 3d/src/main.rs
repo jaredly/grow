@@ -5,6 +5,7 @@ extern crate nalgebra as na;
 extern crate rustc_serialize;
 extern crate gl;
 extern crate time;
+extern crate image;
 
 use na::{Pnt3};
 use kiss3d::window::Window;
@@ -24,8 +25,9 @@ static USAGE: &'static str = "
 3d Growth and Awesomeness
 
 Usage:
-  grow show <maxtime> <outfile>
-  grow make <maxtime> <outfile>
+  grow show <maxtime> <outfile> [--start=<path>]
+  grow make <maxtime> <outfile> [--start=<path>]
+  grow draw <infile> <outfile>
   grow once
   grow info <infile>
   grow display <infile>
@@ -35,6 +37,7 @@ Usage:
 Options:
   -h --help     Show this screen.
   --version     Show version.
+  --start=<path>   The file to use as a base
 ";
 
 #[derive(Debug, RustcDecodable)]
@@ -42,11 +45,13 @@ struct Args {
     arg_maxtime: Option<i32>,
     arg_outfile: Option<String>,
     arg_infile: Option<String>,
+    flag_start: Option<String>,
     cmd_display: bool,
     cmd_info: bool,
     cmd_make: bool,
     cmd_show: bool,
     cmd_once: bool,
+    cmd_draw: bool,
 }
 
 impl DrawState for Window {
@@ -65,9 +70,22 @@ fn write_out(state: &State, outfile: String) {
     bincode::encode_into(&state, &mut out, SizeLimit::Infinite).unwrap();
 }
 
-fn grow(window: &mut Window, max_time: i32, outfile: String) {
+fn load_state(fname: String) -> State {
+    let mut file = File::open(fname).unwrap();
+    bincode::decode_from(&mut file, SizeLimit::Infinite).unwrap()
+}
+
+fn new_state(num: usize) -> State {
     let mut state = State::init();
-    state.start(10);
+    state.start(num);
+    state
+}
+
+fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<String>) {
+    let mut state = match infile {
+        Some(fname) => load_state(fname),
+        _ => new_state(10),
+    };
 
     let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), na::orig());
 
@@ -89,8 +107,7 @@ fn grow(window: &mut Window, max_time: i32, outfile: String) {
 }
 
 fn display(window: &mut Window, infile: String) {
-    let mut file = File::open(infile).unwrap();
-    let mut state = bincode::decode_from(&mut file, SizeLimit::Infinite).unwrap();
+    let mut state = load_state(infile);
 
     let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), na::orig());
 
@@ -101,12 +118,14 @@ fn display(window: &mut Window, infile: String) {
     }
 }
 
-fn make(max_time: i32, outfile: String) {
-    let mut state = State::init();
-    state.start(10);
+fn make(max_time: i32, outfile: String, infile: Option<String>) {
+    let mut state = match infile {
+        Some(fname) => load_state(fname),
+        _ => new_state(10),
+    };
     let start = time::get_time();
 
-    for i in 0..max_time {
+    for i in state.time..max_time {
         state.tick();
         if i % 50 == 0 {
             write_out(&state, outfile.clone() + ".tmp");
@@ -133,6 +152,9 @@ fn just_once() {
     }
 }
 
+fn draw(infile: String, outfile: String) {
+}
+
 fn main() {
     let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.decode())
@@ -144,7 +166,7 @@ fn main() {
         return;
     }
     if args.cmd_make {
-        make(args.arg_maxtime.unwrap(), args.arg_outfile.unwrap());
+        make(args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start);
         return;
     }
     if args.cmd_info {
@@ -169,7 +191,7 @@ fn main() {
     if args.cmd_display {
         display(&mut window, args.arg_infile.unwrap());
     } else {
-        grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap());
+        grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start);
     }
 
 }
