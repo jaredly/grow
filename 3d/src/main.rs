@@ -146,6 +146,7 @@ fn info(infile: String) {
 
 fn just_once() {
     let mut state = State::init();
+<<<<<<< HEAD
     state.start(10);
     for _ in 0..100 {
         state.tick();
