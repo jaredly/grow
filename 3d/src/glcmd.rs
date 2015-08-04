@@ -1,5 +1,6 @@
 extern crate nalgebra as na;
 extern crate kiss3d;
+extern crate time;
 use util;
 
 use na::{Pnt3};
@@ -22,6 +23,7 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
     let mut state = util::load_maybe(infile, 10);
 
     let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), na::orig());
+    let start = time::get_time();
 
     while window.render_with_camera(&mut camera) {
         if state.time < max_time {
@@ -35,6 +37,10 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
             println!("Output");
             util::write_out(&state, outfile.clone());
             state.time += 1;
+        } else if state.time % 50 == 0 {
+            util::write_out(&state, outfile.clone() + ".tmp");
+            let diff = time::get_time() - start;
+            println!("At {} : {}", state.time, diff);
         }
         window.draw_state(&mut state, 180.0);
     }

@@ -106,7 +106,7 @@ fn main() {
 
     let mut window = Window::new("Grow");
     unsafe{
-        gl::LineWidth(15.0);
+        gl::LineWidth(2.0);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
         gl::Enable(gl::BLEND);
