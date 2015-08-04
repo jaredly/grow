@@ -7,18 +7,18 @@ extern crate gl;
 extern crate time;
 extern crate image;
 
-use na::{Pnt3};
+mod state;
+mod util;
+mod glcmd;
+mod imgcmd;
+mod aaline;
+mod drawcmd;
+
 use kiss3d::window::Window;
 use kiss3d::light::Light;
-use kiss3d::camera::ArcBall;
-use state::{State, DrawState};
-use bincode::SizeLimit;
-use std::fs::File;
-
-mod state;
+use state::{State};
 
 extern crate docopt;
-
 use docopt::Docopt;
 
 static USAGE: &'static str = "
@@ -54,106 +54,34 @@ struct Args {
     cmd_draw: bool,
 }
 
-impl DrawState for Window {
-    fn draw_state(&mut self, state: &mut State, off: f32) {
-        for i in 0..state.num_edges() {
-            let (a, b) = state.edge_pts(i);
-            //let color = hsl((state.edges[i].age as f32 / 4.0) % 180.0 + 180.0, 1.0, 0.6);
-            let color = state.edge_color(i, off);
-            self.draw_line(state.pos(a), state.pos(b), &color);
-        }
-    }
-}
-
-fn write_out(state: &State, outfile: String) {
-    let mut out = File::create(outfile).unwrap();
-    bincode::encode_into(&state, &mut out, SizeLimit::Infinite).unwrap();
-}
-
-fn load_state(fname: String) -> State {
-    let mut file = File::open(fname).unwrap();
-    bincode::decode_from(&mut file, SizeLimit::Infinite).unwrap()
-}
-
-fn new_state(num: usize) -> State {
-    let mut state = State::init();
-    state.start(num);
-    state
-}
-
-fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<String>) {
-    let mut state = match infile {
-        Some(fname) => load_state(fname),
-        _ => new_state(10),
-    };
-
-    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), na::orig());
-
-    while window.render_with_camera(&mut camera) {
-        if state.time < max_time {
-            state.tick();
-            let dist = camera.dist();
-            camera.set_dist(dist + 0.04);
-            let yaw = camera.yaw();
-            camera.set_yaw(yaw + 0.004);
-        }
-        if state.time == max_time {
-            println!("Output");
-            write_out(&state, outfile.clone());
-            state.time += 1;
-        }
-        window.draw_state(&mut state, 180.0);
-    }
-}
-
-fn display(window: &mut Window, infile: String) {
-    let mut state = load_state(infile);
-
-    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), na::orig());
-
-    //let mut off = 0.0;
-    while window.render_with_camera(&mut camera) {
-        //off = (off + 0.1) % 360.0;
-        window.draw_state(&mut state, 180.0);
-    }
-}
-
 fn make(max_time: i32, outfile: String, infile: Option<String>) {
-    let mut state = match infile {
-        Some(fname) => load_state(fname),
-        _ => new_state(10),
-    };
+    let mut state = util::load_maybe(infile, 10);
     let start = time::get_time();
 
     for i in state.time..max_time {
         state.tick();
         if i % 50 == 0 {
-            write_out(&state, outfile.clone() + ".tmp");
+            util::write_out(&state, outfile.clone() + ".tmp");
             let diff = time::get_time() - start;
             println!("At {} : {}", i, diff);
         }
     }
     println!("Output");
-    write_out(&state, outfile.clone());
+    util::write_out(&state, outfile.clone());
 }
 
 fn info(infile: String) {
-    let mut file = File::open(infile).unwrap();
-    let state: State = bincode::decode_from(&mut file, SizeLimit::Infinite).unwrap();
+    let state: State = util::load_state(infile);
 
     state.print_info();
 }
 
 fn just_once() {
     let mut state = State::init();
-<<<<<<< HEAD
     state.start(10);
     for _ in 0..100 {
         state.tick();
     }
-}
-
-fn draw(infile: String, outfile: String) {
 }
 
 fn main() {
@@ -186,13 +114,16 @@ fn main() {
     }
 
     window.set_background_color(1.0, 1.0, 1.0);
-
     window.set_light(Light::StickToCamera);
 
-    if args.cmd_display {
-        display(&mut window, args.arg_infile.unwrap());
-    } else {
-        grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start);
+    if args.cmd_draw {
+        drawcmd::draw(&mut window, args.arg_infile.unwrap(), args.arg_outfile.unwrap());
+        return;
     }
 
+    if args.cmd_display {
+        glcmd::display(&mut window, args.arg_infile.unwrap());
+    } else {
+        glcmd::grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start);
+    }
 }

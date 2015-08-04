@@ -10,6 +10,8 @@ rustc-serialize = "0.3"
 bincode = "*"
 docopt = "0.6.69"
 time = "0.1"
+image = "*"
+libc = "*"
 
 [dependencies.kiss3d]
 git = "https://github.com/sebcrozet/kiss3d"
