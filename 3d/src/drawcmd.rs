@@ -28,6 +28,7 @@ pub fn makeit(window: &mut Window, state: &mut State, outfile: String) {
         let mut dst = Vec::with_capacity(num);
         dst.set_len(num);
         ptr::copy_nonoverlapping(mem::transmute(raw), dst.as_mut_ptr(), num);
+        libc::free(raw);
         dst
         //Vec::from_raw_buf(mem::transmute(raw), 500 * 500 * 4)
     };
@@ -41,7 +42,6 @@ pub fn draw(window: &mut Window, infile: String, outfile: String) {
     let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -50.0), na::orig());
 
     let mut off = 0.0;
-    window.render_with_camera(&mut camera);
     //let mut data: Vec<u8> = Vec::with_capacity(500 * 500 * 4);
     let mut time = 0;
     while window.render_with_camera(&mut camera) {
@@ -50,7 +50,7 @@ pub fn draw(window: &mut Window, infile: String, outfile: String) {
         window.draw_state(&mut state, 180.0);
         if time == 100 {
             println!("Making");
-            makeit(window, state, outfile);
+            makeit(window, &mut state, outfile.clone());
         }
         let yaw = camera.yaw();
         camera.set_yaw(yaw + 0.004);
