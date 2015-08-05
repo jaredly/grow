@@ -15,7 +15,7 @@ const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.5;
-const TOO_CROWDED: usize = 54; // neighbors
+const TOO_CROWDED: usize = 34; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
@@ -23,6 +23,7 @@ const CLOSE_DIST: f32 = 2.0;
 const PUSH_DIST: f32 = 0.8;
 const GROW_SPEED: f32 = 0.01;
 const MAX_SPEED: f32  = 0.02;
+const GRAVITY: f32 = 0.01;
 
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Edge {
@@ -387,6 +388,7 @@ impl State {
 
     fn move_things(&mut self) {
         for i in 0..self.pts.len() {
+            /*
             if self.pts[i].dead > TOO_DEAD {
                 continue;
             }
@@ -394,6 +396,14 @@ impl State {
                 self.pts[i].dead += 1;
             } else {
                 self.pts[i].dead = 0;
+            }
+            */
+            if i >= 10 {
+                //if self.pts[i].pos.y < 1.0 {
+                    self.pts[i].vel.y += GRAVITY;
+                //}
+            } else {
+                self.pts[i].vel.y = 0.0;
             }
             self.pts[i].vel = self.pts[i].vel * DAMP;
             self.pts[i].pos = self.pts[i].pos + self.pts[i].vel;

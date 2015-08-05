@@ -53,7 +53,7 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
 
 pub fn display(window: &mut Window, infile: String, hollow: bool) {
     let mut state = util::load_state(infile);
-    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -50.0), na::orig());
+    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 5.0, -50.0), na::orig());
 
     let vertices = state.coords();
     let indices = state.tris.clone();
