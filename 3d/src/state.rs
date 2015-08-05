@@ -24,6 +24,7 @@ const PUSH_DIST: f32 = 0.8;
 const GROW_SPEED: f32 = 0.01;
 const MAX_SPEED: f32  = 0.02;
 const GRAVITY: f32 = 0.01;
+const GRAV_TOP: f32 = 10.0;
 
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Edge {
@@ -199,14 +200,15 @@ impl State {
             if len > MAX_LEN {
                 continue;
             }
-            if self.pts[a].nclose > TOO_CROWDED && self.pts[b].nclose > TOO_CROWDED {
+            let max_crowd = if self.pts[a].pos.y.max(self.pts[b].pos.y) > GRAV_TOP {TOO_CROWDED + 20} else {TOO_CROWDED};
+            if self.pts[a].nclose > max_crowd && self.pts[b].nclose > max_crowd {
                 continue;
             }
             let least = (self.pts[a].nclose as f32).min(self.pts[b].nclose as f32);
             if least <= MIN_CROWD as f32 {
                 self.edges[i].len += MAX_SPEED;
             } else {
-                self.edges[i].len += GROW_SPEED + (MAX_SPEED - GROW_SPEED) * (least - MIN_CROWD as f32) / (TOO_CROWDED as f32 - MIN_CROWD as f32);
+                self.edges[i].len += GROW_SPEED + (MAX_SPEED - GROW_SPEED) * (least - MIN_CROWD as f32) / (max_crowd as f32 - MIN_CROWD as f32);
             }
         }
     }
@@ -399,9 +401,9 @@ impl State {
             }
             */
             if i >= 10 {
-                //if self.pts[i].pos.y < 1.0 {
+                if self.pts[i].pos.y < GRAV_TOP {
                     self.pts[i].vel.y += GRAVITY;
-                //}
+                }
             } else {
                 self.pts[i].vel.y = 0.0;
             }
