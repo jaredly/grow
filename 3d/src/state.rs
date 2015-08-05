@@ -25,6 +25,7 @@ const GROW_SPEED: f32 = 0.01;
 const MAX_SPEED: f32  = 0.02;
 const GRAVITY: f32 = 0.01;
 const GRAV_TOP: f32 = 10.0;
+const GRAV_BOTTOM: f32 = 7.0;
 
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Edge {
@@ -402,7 +403,11 @@ impl State {
             */
             if i >= 10 {
                 if self.pts[i].pos.y < GRAV_TOP {
-                    self.pts[i].vel.y += GRAVITY;
+                    if self.pts[i].pos.y < GRAV_BOTTOM {
+                        self.pts[i].vel.y += GRAVITY;
+                    } else {
+                        self.pts[i].vel.y += GRAVITY * (self.pts[i].vel.y - GRAV_BOTTOM) / (GRAV_TOP - GRAV_BOTTOM);
+                    }
                 }
             } else {
                 self.pts[i].vel.y = 0.0;
