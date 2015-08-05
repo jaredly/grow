@@ -15,7 +15,7 @@ const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.5;
-const TOO_CROWDED: usize = 34; // neighbors
+const TOO_CROWDED: usize = 54; // neighbors
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
@@ -52,6 +52,7 @@ pub struct State {
     pub time: i32,
     pts: Vec<Node>,// = [Pnt3{x: 0.0, y: 0.0, z:0.0}; 1000];
     edges: Vec<Edge>,// = [Edge{a: 0, b: 0}; 1000];
+    pub tris: Vec<Pnt3<u32>>,
 }
 
 fn hsl(h: f32, s: f32, l: f32) -> Pnt3<f32> {
@@ -83,6 +84,8 @@ impl State {
             time: 0,
             pts: vec![],
             edges: vec![],
+            // added later
+            tris: vec![],
         }
     }
 
@@ -108,6 +111,10 @@ impl State {
     #[inline]
     pub fn num_edges(&self) -> usize {
         self.edges.len()
+    }
+
+    pub fn coords(&self) -> Vec<Pnt3<f32>> {
+        self.pts.iter().map(|m| m.pos).collect()
     }
 
     pub fn start(&mut self, num: usize) {
@@ -355,6 +362,7 @@ impl State {
                 left: self.edges[i].a,
                 right: ob,
             });
+            self.tris.push(Pnt3::new(npt as u32, a as u32, b as u32));
             self.pts[a].right = npt;
             self.pts[b].left = npt;
             self.edges.push(Edge{

@@ -13,6 +13,7 @@ mod glcmd;
 mod imgcmd;
 mod aaline;
 mod drawcmd;
+mod normal;
 
 use kiss3d::window::Window;
 use kiss3d::light::Light;
@@ -25,12 +26,11 @@ static USAGE: &'static str = "
 3d Growth and Awesomeness
 
 Usage:
-  grow show <maxtime> <outfile> [--start=<path>]
+  grow show <maxtime> <outfile> [--start=<path>] [--hollow]
   grow make <maxtime> <outfile> [--start=<path>]
-  grow draw <infile> <outfile>
   grow once
   grow info <infile>
-  grow display <infile>
+  grow display <infile> [--hollow]
   grow (-h | --help)
   grow --version
 
@@ -46,12 +46,12 @@ struct Args {
     arg_outfile: Option<String>,
     arg_infile: Option<String>,
     flag_start: Option<String>,
+    flag_hollow: bool,
     cmd_display: bool,
     cmd_info: bool,
     cmd_make: bool,
     cmd_show: bool,
     cmd_once: bool,
-    cmd_draw: bool,
 }
 
 fn make(max_time: i32, outfile: String, infile: Option<String>) {
@@ -106,9 +106,11 @@ fn main() {
 
     let mut window = Window::new("Grow");
     unsafe{
-        gl::LineWidth(2.0);
+        if args.flag_hollow {
+        gl::LineWidth(15.0);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
+        }
         gl::Enable(gl::BLEND);
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     }
@@ -116,14 +118,9 @@ fn main() {
     window.set_background_color(1.0, 1.0, 1.0);
     window.set_light(Light::StickToCamera);
 
-    if args.cmd_draw {
-        drawcmd::draw(&mut window, args.arg_infile.unwrap(), args.arg_outfile.unwrap());
-        return;
-    }
-
     if args.cmd_display {
-        glcmd::display(&mut window, args.arg_infile.unwrap());
+        glcmd::display(&mut window, args.arg_infile.unwrap(), args.flag_hollow);
     } else {
-        glcmd::grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start);
+        glcmd::grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start, args.flag_hollow);
     }
 }
