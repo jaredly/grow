@@ -406,7 +406,7 @@ impl State {
                     if self.pts[i].pos.y < GRAV_BOTTOM {
                         self.pts[i].vel.y += GRAVITY;
                     } else {
-                        self.pts[i].vel.y += GRAVITY * (self.pts[i].vel.y - GRAV_BOTTOM) / (GRAV_TOP - GRAV_BOTTOM);
+                        self.pts[i].vel.y += GRAVITY * (self.pts[i].pos.y - GRAV_BOTTOM) / (GRAV_TOP - GRAV_BOTTOM);
                     }
                 }
             } else {
