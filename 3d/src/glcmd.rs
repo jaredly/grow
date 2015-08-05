@@ -60,7 +60,7 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
     let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, None, false)));
     if !hollow {
         let mut obj = window.add_mesh(mesh, na::one());
-        obj.set_color(1.0, 0.0, 0.0);
+        obj.set_color(0.0, 1.0, 0.0);
         obj.enable_backface_culling(false);
         //let material   = Rc::new(RefCell::new(Box::new(NormalsMaterial::new()) as Box<Material + 'static>));
         //obj.set_material(material);
