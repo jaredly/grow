@@ -6,7 +6,9 @@ extern crate image;
 use image::{ImageBuffer, Rgba};
 use std::fs::File;
 
+use shaded;
 use util;
+
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 
@@ -146,7 +148,8 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
 
     let vertices = state.coords();
     let indices = state.tris.clone();
-    let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, None, false)));
+    let texture_idx = state.coord_colors(0.0);
+    let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
     if !hollow {
         let mut obj = window.add_mesh(mesh, na::one());
         obj.set_color(0.0, 1.0, 0.0);
@@ -157,7 +160,7 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
 
         // obj.set_points_size(10.0);
         //obj.set_texture_from_file(&Path::new("media/kitten.png"), "kitten");
-        let material   = Rc::new(RefCell::new(Box::new(UvsMaterial::new()) as Box<Material + 'static>));
+        let material   = Rc::new(RefCell::new(Box::new(shaded::UvsMaterial::new()) as Box<Material + 'static>));
         obj.set_material(material);
     }
 

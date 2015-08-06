@@ -2,7 +2,7 @@
 
 extern crate nalgebra as na;
 use std::f32;
-use na::{Vec3, Pnt3, FloatPnt, Norm};
+use na::{Pnt2, Vec3, Pnt3, FloatPnt, Norm};
 use std::collections::HashMap;
 
 //let SHOW_POINTS = false;
@@ -41,6 +41,7 @@ struct Node {
     pos: Pnt3<f32>,
     vel: Vec3<f32>,
     nclose: usize,
+    age: usize,
     dead: i32,
     left: usize,
     right: usize,
@@ -118,7 +119,14 @@ impl State {
     }
 
     pub fn coords(&self) -> Vec<Pnt3<f32>> {
-        self.pts.iter().map(|m| m.pos).collect()
+        self.pts.iter().map(|n| n.pos).collect()
+    }
+
+    pub fn coord_colors(&self, off: f32) -> Vec<Pnt2<f32>> {
+        self.pts.iter().map(|n| 
+            Pnt2::new(n.age as f32 / self.time as f32, 1.0)
+            // hsl(((1.8 - n.age as f32 / self.time as f32) * 180.0 + off) % 360.0, 1.0, 0.3)
+        ).collect()
     }
 
     pub fn start(&mut self, num: usize) {
@@ -134,6 +142,7 @@ impl State {
                     y: (i as f32 * scale).sin() * mrad,
                     z: mrad - rad, // 0.0,
                 },
+                age: 0,
                 trunk: true,
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
@@ -363,6 +372,7 @@ impl State {
             self.edges[i].age = 0;
             self.pts.push(Node{
                 pos: npos,
+                age: 0,
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
                 dead: 0,
@@ -424,6 +434,7 @@ impl State {
             }
             self.pts[i].vel = self.pts[i].vel * DAMP;
             self.pts[i].pos = self.pts[i].pos + self.pts[i].vel;
+            self.pts[i].age += 1;
         }
     }
 }

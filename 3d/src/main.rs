@@ -15,6 +15,7 @@ mod glcmd;
 mod imgcmd;
 mod aaline;
 mod drawcmd;
+mod shaded;
 
 use kiss3d::window::Window;
 use kiss3d::light::Light;
