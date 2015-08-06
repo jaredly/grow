@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(unused_imports)]
 extern crate kiss3d;
 extern crate bincode;
 extern crate nalgebra as na;
@@ -6,6 +7,7 @@ extern crate rustc_serialize;
 extern crate gl;
 extern crate time;
 extern crate image;
+extern crate glfw;
 
 mod state;
 mod util;
@@ -26,8 +28,9 @@ static USAGE: &'static str = "
 3d Growth and Awesomeness
 
 Usage:
-  grow show <maxtime> <outfile> [--start=<path>] [--hollow]
+  grow show <maxtime> <outfile> [--start=<path>] [--hollow] [--record]
   grow make <maxtime> <outfile> [--start=<path>]
+  grow draw <infile> <outfile>
   grow once
   grow info <infile>
   grow display <infile> [--hollow]
@@ -47,11 +50,13 @@ struct Args {
     arg_infile: Option<String>,
     flag_start: Option<String>,
     flag_hollow: bool,
+    flag_record: bool,
     cmd_display: bool,
     cmd_info: bool,
     cmd_make: bool,
     cmd_show: bool,
     cmd_once: bool,
+    cmd_draw: bool,
 }
 
 fn make(max_time: i32, outfile: String, infile: Option<String>) {
@@ -107,7 +112,7 @@ fn main() {
     let mut window = Window::new("Grow");
     unsafe{
         if args.flag_hollow {
-        gl::LineWidth(15.0);
+        gl::LineWidth(3.0);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
         }
@@ -118,9 +123,11 @@ fn main() {
     window.set_background_color(1.0, 1.0, 1.0);
     window.set_light(Light::StickToCamera);
 
-    if args.cmd_display {
+    if args.cmd_draw {
+        drawcmd::draw(&mut window, args.arg_infile.unwrap(), args.arg_outfile.unwrap());
+    } else if args.cmd_display {
         glcmd::display(&mut window, args.arg_infile.unwrap(), args.flag_hollow);
     } else {
-        glcmd::grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start, args.flag_hollow);
+        glcmd::grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start, args.flag_hollow, args.flag_record);
     }
 }

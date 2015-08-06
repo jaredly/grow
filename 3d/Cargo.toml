@@ -12,9 +12,11 @@ docopt = "0.6.69"
 time = "0.1"
 image = "*"
 libc = "*"
+glfw = "*"
 
 [dependencies.kiss3d]
-git = "https://github.com/sebcrozet/kiss3d"
+path = "kiss3d"
+# git = "https://github.com/sebcrozet/kiss3d"
 
 [profile.release]
-#lto = true
+# lto = true

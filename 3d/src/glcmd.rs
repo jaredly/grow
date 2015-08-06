@@ -1,17 +1,25 @@
 extern crate nalgebra as na;
 extern crate kiss3d;
 extern crate time;
+extern crate glfw;
+extern crate image;
+use image::{ImageBuffer, Rgba};
+use std::fs::File;
 
 use util;
+use std::sync::mpsc;
+use std::sync::mpsc::{Sender, Receiver};
 
 use std::rc::Rc;
 use std::cell::RefCell;
-use na::{Pnt3};
+use na::{Pnt3, Vec2};
 use state::{State, DrawState};
 use kiss3d::window::Window;
 use kiss3d::camera::ArcBall;
-use kiss3d::resource::{Shader, ShaderAttribute, ShaderUniform, Material, Mesh};
+use kiss3d::resource::{Shader, ShaderAttribute, ShaderUniform, Material, Mesh, FramebufferManager};
 use kiss3d::builtin::NormalsMaterial;
+use glfw::{Action, Key, WindowEvent};
+use std::thread;
 
 impl DrawState for Window {
     fn draw_state(&mut self, state: &mut State, off: f32) {
@@ -24,19 +32,99 @@ impl DrawState for Window {
     }
 }
 
-pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<String>, hollow: bool) {
-    let mut state = util::load_maybe(infile, 10);
+fn shoot(window: &mut Window, outfile: String) {
+    let Vec2{x: mut width, y: mut height} = window.size();
+    width *= 2.0;
+    height *= 2.0;
+    let mut buf = Vec::new();
+    window.snap_rect(&mut buf, 0, 0, width as usize, height as usize);
 
-    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), na::orig());
+    thread::spawn(move || {
+        vflip(&mut buf, (width * 3.0) as usize, height as usize);
+        let mut img = image::ImageBuffer::from_raw(width as u32, height as u32, buf).unwrap();
+        let mut fout = File::create(outfile.clone()).unwrap();
+        image::ImageRgb8(img).save(&mut fout, image::PNG).unwrap();
+        println!("Wrote {}", outfile);
+    });
+}
+
+fn shoot_at(window: &mut Window, outfile: String, sender: Sender<(String, Box<Vec<u8>>, usize, usize)>) {
+    let Vec2{x: mut width, y: mut height} = window.size();
+    width *= 2.0;
+    height *= 2.0;
+    let mut buf = Vec::new();
+    window.snap_rect(&mut buf, 0, 0, width as usize, height as usize);
+    sender.send((outfile, Box::new(buf), width as usize, height as usize));
+}
+
+fn vflip(vec: &mut [u8], width: usize, height: usize) {
+    for j in 0 .. height / 2 {
+        for i in 0 .. width {
+            vec.swap((height - j - 1) * width + i, j * width + i);
+        }
+    }
+}
+
+pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<String>, hollow: bool, record: bool) {
+    let mut state = util::load_maybe(infile.clone(), 10);
+
+    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), Pnt3::new(0.0, 1.5, 0.0));
     let start = time::get_time();
 
+    let (sender, receiver): (Sender<(String, Box<Vec<u8>>, usize, usize)>, Receiver<_>) = mpsc::channel();
+
+    thread::spawn(move || {
+        while true {
+            let (outfile, mut buf, width, height) = match receiver.recv() {
+                Ok(x) => x,
+                Err(_) => {return},
+            };
+            vflip(&mut *buf, width * 3, height);
+            let mut img = image::ImageBuffer::from_raw(width as u32, height as u32, *buf).unwrap();
+            let mut fout = File::create(outfile.clone()).unwrap();
+            image::ImageRgb8(img).save(&mut fout, image::PNG).unwrap();
+            println!("Wrote {}", outfile);
+        }
+    });
+
+    let mut running = true;
+    let mut recording = record;
     while window.render_with_camera(&mut camera) {
-        if state.time < max_time {
+        for event in window.events().iter() {
+            match event.value {
+                WindowEvent::Key(code, _, Action::Press, _) => {
+                    match code {
+                        Key::X => {
+                            state = util::load_maybe(infile.clone(), 10);
+                        },
+                        Key::R => {
+                            recording = !recording;
+                        },
+                        Key::S => {
+                            shoot_at(window, format!("{}-{:04}.png", outfile.clone(), state.time), sender.clone());
+                        },
+                        Key::P => {
+                            running = !running;
+                        },
+                        _ => {}
+                    }
+                },
+                _ => {}
+            }
+        }
+
+        if running && state.time < max_time {
+            if recording {
+                shoot_at(window, format!("{}-{}.png", outfile.clone(), state.time), sender.clone());
+            }
+
             state.tick();
             let dist = camera.dist();
-            camera.set_dist(dist + 0.04);
+            camera.set_dist(dist + 0.03);
             let yaw = camera.yaw();
             camera.set_yaw(yaw + 0.004);
+            let at = camera.at_mut();
+            at.y += 0.010;
         }
         if state.time == max_time {
             println!("Output");
