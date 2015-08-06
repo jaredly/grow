@@ -19,6 +19,7 @@ mod drawcmd;
 use kiss3d::window::Window;
 use kiss3d::light::Light;
 use state::{State};
+use na::Pnt3;
 
 extern crate docopt;
 use docopt::Docopt;
@@ -109,11 +110,11 @@ fn main() {
     }
 
     let mut window = Window::new("Grow");
-    unsafe{
+    unsafe {
         if args.flag_hollow {
-        gl::LineWidth(3.0);
-        gl::Enable(gl::LINE_SMOOTH);
-        gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
+            gl::LineWidth(1.0);
+            gl::Enable(gl::LINE_SMOOTH);
+            gl::Hint(gl::LINE_SMOOTH_HINT, gl::NICEST);
         }
         gl::Enable(gl::BLEND);
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
@@ -121,6 +122,7 @@ fn main() {
 
     window.set_background_color(1.0, 1.0, 1.0);
     window.set_light(Light::StickToCamera);
+    // window.set_light(Light::Absolute(Pnt3::new(10.0, 1.0, 0.0)));
 
     if args.cmd_draw {
         drawcmd::draw(&mut window, args.arg_infile.unwrap(), args.arg_outfile.unwrap());

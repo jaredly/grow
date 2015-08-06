@@ -62,23 +62,6 @@ pub fn draw(window: &mut Window, infile: String, outfile: String) {
         let mut fout = File::create(format!("{}.{}.png", outfile.clone(), i)).unwrap();
         image::ImageRgb8(img).save(&mut fout, image::PNG).unwrap();
     }
-
-    /*
-    let mut off = 0.0;
-    //let mut data: Vec<u8> = Vec::with_capacity(500 * 500 * 4);
-    let mut time = 0;
-    while window.render_with_camera(&mut camera) {
-        off = (off + 0.1) % 360.0;
-        time += 1;
-        window.draw_state(&mut state, 180.0);
-        if time == 100 {
-            println!("Making");
-            makeit(outfile.clone());
-        }
-        let yaw = camera.yaw();
-        camera.set_yaw(yaw + 0.004);
-    }
-    */
 }
 
 fn vflip(vec: &mut [u8], width: usize, height: usize) {

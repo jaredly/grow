@@ -17,9 +17,10 @@ use state::{State, DrawState};
 use kiss3d::window::Window;
 use kiss3d::camera::ArcBall;
 use kiss3d::resource::{Shader, ShaderAttribute, ShaderUniform, Material, Mesh, FramebufferManager};
-use kiss3d::builtin::NormalsMaterial;
+use kiss3d::builtin::UvsMaterial;
 use glfw::{Action, Key, WindowEvent};
 use std::thread;
+use std::path::Path;
 
 impl DrawState for Window {
     fn draw_state(&mut self, state: &mut State, off: f32) {
@@ -150,8 +151,14 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
         let mut obj = window.add_mesh(mesh, na::one());
         obj.set_color(0.0, 1.0, 0.0);
         obj.enable_backface_culling(false);
-        //let material   = Rc::new(RefCell::new(Box::new(NormalsMaterial::new()) as Box<Material + 'static>));
-        //obj.set_material(material);
+
+        // obj.set_surface_rendering_activation(false);
+        // obj.set_lines_width(2.0);
+
+        // obj.set_points_size(10.0);
+        //obj.set_texture_from_file(&Path::new("media/kitten.png"), "kitten");
+        let material   = Rc::new(RefCell::new(Box::new(UvsMaterial::new()) as Box<Material + 'static>));
+        obj.set_material(material);
     }
 
     let mut off = 0.0;
