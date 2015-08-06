@@ -124,7 +124,7 @@ impl State {
 
     pub fn coord_colors(&self, off: f32) -> Vec<Pnt2<f32>> {
         self.pts.iter().map(|n| 
-            Pnt2::new(n.age as f32 / self.time as f32, 1.0)
+            Pnt2::new(n.age as f32 / self.time as f32, 0.5)
             // hsl(((1.8 - n.age as f32 / self.time as f32) * 180.0 + off) % 360.0, 1.0, 0.3)
         ).collect()
     }

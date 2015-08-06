@@ -115,7 +115,7 @@ uniform mat4 transform;
 uniform mat3 scale;
 varying vec3 uv_as_a_color;
 void main() {
-    uv_as_a_color  = vec3(uvs.x, uvs.x, uvs.x);
+    uv_as_a_color  = vec3(uvs.xy, 0.0);
     gl_Position = view * transform * mat4(scale) * vec4(position, 1.0);
 }
 ";
