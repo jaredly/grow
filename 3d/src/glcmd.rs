@@ -150,6 +150,7 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
     let indices = state.tris.clone();
     let texture_idx = state.coord_colors(0.0);
     let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
+    let material   = Rc::new(RefCell::new(Box::new(shaded::UvsMaterial::new()) as Box<Material + 'static>));
     if !hollow {
         let mut obj = window.add_mesh(mesh, na::one());
         obj.set_color(0.0, 1.0, 0.0);
@@ -159,13 +160,13 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
         obj.set_lines_width(15.0);
 
         //obj.set_texture_from_file(&Path::new("media/kitten.png"), "kitten");
-        let material   = Rc::new(RefCell::new(Box::new(shaded::UvsMaterial::new()) as Box<Material + 'static>));
         obj.set_material(material);
     }
 
     let mut off = 0.0;
     while window.render_with_camera(&mut camera) {
         off = (off + 0.1) % 360.0;
+        // material.inc_time();
         if hollow {
             window.draw_state(&mut state, 180.0);
         }

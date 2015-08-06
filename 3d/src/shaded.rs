@@ -19,7 +19,9 @@ pub struct UvsMaterial {
     uvs:       ShaderAttribute<Pnt2<f32>>,
     view:      ShaderUniform<Mat4<f32>>,
     transform: ShaderUniform<Mat4<f32>>,
-    scale:     ShaderUniform<Mat3<f32>>
+    scale:     ShaderUniform<Mat3<f32>>,
+    time:      ShaderUniform<f32>,
+    time_local: i32,
 }
 
 impl UvsMaterial {
@@ -35,8 +37,18 @@ impl UvsMaterial {
             transform: shader.get_uniform("transform").unwrap(),
             scale:     shader.get_uniform("scale").unwrap(),
             view:      shader.get_uniform("view").unwrap(),
+            time:      shader.get_uniform("time").unwrap(),
+            time_local:0,
             shader:    shader
         }
+    }
+
+    pub fn inc_time(&mut self) {
+        self.time_local += 1;
+    }
+
+    pub fn set_time(&mut self, time: i32) {
+        self.time_local = time;
     }
 }
 
@@ -83,6 +95,8 @@ impl Material for UvsMaterial {
 
         self.transform.upload(&formated_transform);
         self.scale.upload(&formated_scale);
+        self.inc_time();
+        self.time.upload(&(self.time_local as f32));
 
         mesh.bind_coords(&mut self.position);
         mesh.bind_uvs(&mut self.uvs);
@@ -110,6 +124,7 @@ const A_VERY_LONG_STRING: &'static str =
 "#version 120
 attribute vec3 position;
 attribute vec3 uvs;
+uniform int time;
 uniform mat4 view;
 uniform mat4 transform;
 uniform mat3 scale;
@@ -122,8 +137,10 @@ void main() {
 
 const ANOTHER_VERY_LONG_STRING: &'static str =
 "#version 120
+uniform float time;
 varying vec3 uv_as_a_color;
 void main() {
-    gl_FragColor = vec4(uv_as_a_color, 0.6);
+    float vtime = sin(time / 25.0) * 0.4 + 0.5;
+    gl_FragColor = vec4(uv_as_a_color, vtime);
 }
 ";
