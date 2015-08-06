@@ -41,7 +41,7 @@ fn shoot(window: &mut Window, outfile: String) {
 
     thread::spawn(move || {
         vflip(&mut buf, (width * 3.0) as usize, height as usize);
-        let mut img = image::ImageBuffer::from_raw(width as u32, height as u32, buf).unwrap();
+        let img = image::ImageBuffer::from_raw(width as u32, height as u32, buf).unwrap();
         let mut fout = File::create(outfile.clone()).unwrap();
         image::ImageRgb8(img).save(&mut fout, image::PNG).unwrap();
         println!("Wrote {}", outfile);
@@ -54,7 +54,7 @@ fn shoot_at(window: &mut Window, outfile: String, sender: Sender<(String, Box<Ve
     height *= 2.0;
     let mut buf = Vec::new();
     window.snap_rect(&mut buf, 0, 0, width as usize, height as usize);
-    sender.send((outfile, Box::new(buf), width as usize, height as usize));
+    sender.send((outfile, Box::new(buf), width as usize, height as usize)).unwrap();
 }
 
 fn vflip(vec: &mut [u8], width: usize, height: usize) {
@@ -74,13 +74,13 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
     let (sender, receiver): (Sender<(String, Box<Vec<u8>>, usize, usize)>, Receiver<_>) = mpsc::channel();
 
     thread::spawn(move || {
-        while true {
+        loop {
             let (outfile, mut buf, width, height) = match receiver.recv() {
                 Ok(x) => x,
                 Err(_) => {return},
             };
             vflip(&mut *buf, width * 3, height);
-            let mut img = image::ImageBuffer::from_raw(width as u32, height as u32, *buf).unwrap();
+            let img = image::ImageBuffer::from_raw(width as u32, height as u32, *buf).unwrap();
             let mut fout = File::create(outfile.clone()).unwrap();
             image::ImageRgb8(img).save(&mut fout, image::PNG).unwrap();
             println!("Wrote {}", outfile);

@@ -20,7 +20,7 @@ use std::mem;
 use std::ptr;
 //use core::ptr;
 
-pub fn makeit(window: &mut Window, state: &mut State, outfile: String) {
+pub fn makeit(outfile: String) {
     let num = 4 * 500 * 500 as usize;
     let my_data: Vec<u8> = unsafe {
         let raw: *mut libc::c_void = libc::malloc(num as u64) as *mut libc::c_void;
@@ -73,7 +73,7 @@ pub fn draw(window: &mut Window, infile: String, outfile: String) {
         window.draw_state(&mut state, 180.0);
         if time == 100 {
             println!("Making");
-            makeit(window, &mut state, outfile.clone());
+            makeit(outfile.clone());
         }
         let yaw = camera.yaw();
         camera.set_yaw(yaw + 0.004);

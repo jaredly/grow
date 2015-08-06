@@ -44,6 +44,7 @@ struct Node {
     dead: i32,
     left: usize,
     right: usize,
+    trunk: bool,
 }
 
 pub trait DrawState {
@@ -133,6 +134,7 @@ impl State {
                     y: (i as f32 * scale).sin() * mrad,
                     z: mrad - rad, // 0.0,
                 },
+                trunk: true,
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
                 dead: 0,
@@ -357,12 +359,14 @@ impl State {
             let npt = self.pts.len();
             let npos = self.pts[a].pos + (self.pts[b].pos - self.pts[a].pos) / 2.0;
             let ob = self.edges[i].b;
+            let trunk = self.pts[a].trunk || self.pts[b].trunk;
             self.edges[i].age = 0;
             self.pts.push(Node{
                 pos: npos,
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
                 dead: 0,
+                trunk: trunk,
                 left: self.edges[i].a,
                 right: ob,
             });
@@ -402,12 +406,18 @@ impl State {
             }
             */
             if i >= 10 {
-                if self.pts[i].pos.y < GRAV_TOP {
+                if self.pts[i].pos.y > GRAV_TOP {
+                    self.pts[i].trunk = false;
+                }
+                if self.pts[i].trunk {
+                    self.pts[i].vel.y += GRAVITY;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
+                    /*
                     if self.pts[i].pos.y < GRAV_BOTTOM {
                         self.pts[i].vel.y += GRAVITY;
                     } else {
                         self.pts[i].vel.y += GRAVITY * (self.pts[i].pos.y - GRAV_BOTTOM) / (GRAV_TOP - GRAV_BOTTOM);
                     }
+                    */
                 }
             } else {
                 self.pts[i].vel.y = 0.0;
