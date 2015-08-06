@@ -127,7 +127,8 @@ impl State {
         self.pts.iter().map(|n| 
             Pnt2::new(
                 1.0 - n.age as f32 / self.time as f32,
-                if n.siblings > 32 {1.0} else {(n.siblings - 2) as f32 / 30.0}
+                if n.trunk {1.0} else {0.0}
+                // if n.siblings > 32 {1.0} else {(n.siblings - 2) as f32 / 30.0}
             )
             // hsl(((1.8 - n.age as f32 / self.time as f32) * 180.0 + off) % 360.0, 1.0, 0.3)
         ).collect()
