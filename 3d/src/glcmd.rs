@@ -150,7 +150,7 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
     let indices = state.tris.clone();
     let texture_idx = state.coord_colors(0.0);
     let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
-    let material   = Rc::new(RefCell::new(Box::new(shaded::UvsMaterial::new()) as Box<Material + 'static>));
+    let material   = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::default()) as Box<Material + 'static>));
     if !hollow {
         let mut obj = window.add_mesh(mesh, na::one());
         obj.set_color(0.0, 1.0, 0.0);

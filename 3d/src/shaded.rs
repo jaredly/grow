@@ -13,7 +13,7 @@ use kiss3d::resource::{Mesh, Shader, ShaderAttribute, ShaderUniform};
 mod error;
 
 /// A material that draws normals of an object.
-pub struct UvsMaterial {
+pub struct ShaderMaterial {
     shader:    Shader,
     position:  ShaderAttribute<Pnt3<f32>>,
     uvs:       ShaderAttribute<Pnt2<f32>>,
@@ -24,14 +24,14 @@ pub struct UvsMaterial {
     time_local: i32,
 }
 
-impl UvsMaterial {
-    /// Creates a new UvsMaterial.
-    pub fn new() -> UvsMaterial {
-        let mut shader = Shader::new_from_str(UVS_VERTEX_SRC, UVS_FRAGMENT_SRC);
+impl ShaderMaterial {
+    /// Creates a new ShaderMaterial.
+    pub fn new(vertex_src: &str, fragment_src: &str) -> ShaderMaterial {
+        let mut shader = Shader::new_from_str(vertex_src, fragment_src);
 
         shader.use_program();
 
-        UvsMaterial {
+        ShaderMaterial {
             position:  shader.get_attrib("position").unwrap(),
             uvs:       shader.get_attrib("uvs").unwrap(),
             transform: shader.get_uniform("transform").unwrap(),
@@ -43,6 +43,10 @@ impl UvsMaterial {
         }
     }
 
+    pub fn default() -> ShaderMaterial {
+        ShaderMaterial::new(UVS_VERTEX_SRC, UVS_FRAGMENT_SRC)
+    }
+
     pub fn inc_time(&mut self) {
         self.time_local += 1;
     }
@@ -52,7 +56,7 @@ impl UvsMaterial {
     }
 }
 
-impl Material for UvsMaterial {
+impl Material for ShaderMaterial {
     fn render(&mut self,
               pass:      usize,
               transform: &Iso3<f32>,
@@ -130,8 +134,9 @@ uniform mat4 transform;
 uniform mat3 scale;
 varying vec3 uv_as_a_color;
 void main() {
-    //float vtime = sin(time / 25.0) * 0.4 + 0.5;
-    uv_as_a_color  = vec3(uvs.x, 0.1, uvs.x / 2.0 + 0.5);
+    // float vtime = sin(time / 25.0) * 0.4 + 0.5;
+    uv_as_a_color  = vec3(uvs.y * 0.6, 1.0 - uvs.y * 0.6, uvs.y * .2);
+    // uv_as_a_color  = vec3(uvs.x, 0.1, uvs.x / 2.0 + 0.5);
     gl_Position = view * transform * mat4(scale) * vec4(position, 1.0);
 }
 ";
@@ -140,6 +145,6 @@ const ANOTHER_VERY_LONG_STRING: &'static str =
 "#version 120
 varying vec3 uv_as_a_color;
 void main() {
-    gl_FragColor = vec4(uv_as_a_color, 0.7);
+    gl_FragColor = vec4(uv_as_a_color, 0.9);
 }
 ";

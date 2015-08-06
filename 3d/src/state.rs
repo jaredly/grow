@@ -41,6 +41,7 @@ struct Node {
     pos: Pnt3<f32>,
     vel: Vec3<f32>,
     nclose: usize,
+    siblings: usize,
     age: usize,
     dead: i32,
     left: usize,
@@ -124,7 +125,10 @@ impl State {
 
     pub fn coord_colors(&self, off: f32) -> Vec<Pnt2<f32>> {
         self.pts.iter().map(|n| 
-            Pnt2::new(1.0 - n.age as f32 / self.time as f32, 0.5)
+            Pnt2::new(
+                1.0 - n.age as f32 / self.time as f32,
+                if n.siblings > 32 {1.0} else {(n.siblings - 2) as f32 / 30.0}
+            )
             // hsl(((1.8 - n.age as f32 / self.time as f32) * 180.0 + off) % 360.0, 1.0, 0.3)
         ).collect()
     }
@@ -142,6 +146,7 @@ impl State {
                     y: (i as f32 * scale).sin() * mrad,
                     z: mrad - rad, // 0.0,
                 },
+                siblings: 2,
                 age: 0,
                 trunk: true,
                 vel: Vec3::new(0.0, 0.0, 0.0),
@@ -373,6 +378,7 @@ impl State {
             self.pts.push(Node{
                 pos: npos,
                 age: 0,
+                siblings: 2,
                 vel: Vec3::new(0.0, 0.0, 0.0),
                 nclose: 0,
                 dead: 0,
@@ -381,6 +387,8 @@ impl State {
                 right: ob,
             });
             self.tris.push(Pnt3::new(npt as u32, a as u32, b as u32));
+            self.pts[a].siblings += 1;
+            self.pts[b].siblings += 1;
             self.pts[a].right = npt;
             self.pts[b].left = npt;
             self.edges.push(Edge{
