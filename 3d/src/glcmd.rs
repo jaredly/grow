@@ -156,9 +156,8 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
         obj.enable_backface_culling(false);
 
         // obj.set_surface_rendering_activation(false);
-        // obj.set_lines_width(2.0);
+        obj.set_lines_width(15.0);
 
-        // obj.set_points_size(10.0);
         //obj.set_texture_from_file(&Path::new("media/kitten.png"), "kitten");
         let material   = Rc::new(RefCell::new(Box::new(shaded::UvsMaterial::new()) as Box<Material + 'static>));
         obj.set_material(material);

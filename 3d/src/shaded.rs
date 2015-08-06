@@ -115,7 +115,7 @@ uniform mat4 transform;
 uniform mat3 scale;
 varying vec3 uv_as_a_color;
 void main() {
-    uv_as_a_color  = vec3(uvs.x, uvs.x, uvs.x);
+    uv_as_a_color  = vec3(uvs.x, uvs.x, uvs.x / 2.0 + 0.5);
     gl_Position = view * transform * mat4(scale) * vec4(position, 1.0);
 }
 ";
@@ -124,6 +124,6 @@ const ANOTHER_VERY_LONG_STRING: &'static str =
 "#version 120
 varying vec3 uv_as_a_color;
 void main() {
-    gl_FragColor = vec4(uv_as_a_color, 0.5);
+    gl_FragColor = vec4(uv_as_a_color, 0.6);
 }
 ";
