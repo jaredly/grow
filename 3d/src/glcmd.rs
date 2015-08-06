@@ -101,7 +101,7 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
                             recording = !recording;
                         },
                         Key::S => {
-                            shoot_at(window, format!("{}-{:04}.png", outfile.clone(), state.time), sender.clone());
+                            shoot_at(window, format!("gen/{}-{:04}.png", outfile.clone(), state.time), sender.clone());
                         },
                         Key::P => {
                             running = !running;
@@ -115,14 +115,14 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
 
         if running && state.time < max_time {
             if recording {
-                shoot_at(window, format!("{}-{}.png", outfile.clone(), state.time), sender.clone());
+                shoot_at(window, format!("gen/{}-{:04}.png", outfile.clone(), state.time), sender.clone());
             }
 
             state.tick();
             let dist = camera.dist();
             camera.set_dist(dist + 0.03);
             let yaw = camera.yaw();
-            camera.set_yaw(yaw + 0.004);
+            camera.set_yaw(yaw + 0.002);
             let at = camera.at_mut();
             at.y += 0.010;
         }
