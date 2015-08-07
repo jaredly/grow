@@ -70,7 +70,6 @@ fn vflip(vec: &mut [u8], width: usize, height: usize) {
 
 pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<String>, hollow: bool, record: bool) {
     let mut state = util::load_maybe(infile.clone(), 10);
-
     let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), Pnt3::new(0.0, 1.5, 0.0));
     let start = time::get_time();
 
@@ -89,6 +88,18 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
             println!("Wrote {}", outfile);
         }
     });
+
+    let vertices = state.coords();
+    let indices = state.tris.clone();
+    let texture_idx = state.coord_colors(0.0);
+    let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
+    let material   = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::default()) as Box<Material + 'static>));
+    let mut obj = window.add_mesh(mesh, na::one());
+    obj.set_color(0.0, 1.0, 0.0);
+    obj.enable_backface_culling(false);
+    // obj.set_surface_rendering_activation(false);
+    obj.set_lines_width(15.0);
+    obj.set_material(material);
 
     let mut running = true;
     let mut recording = record;
@@ -122,6 +133,30 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
             }
 
             state.tick();
+
+            // update stuff
+            let vertices = state.coords();
+            let indices = state.tris.clone();
+            let texture_idx = state.coord_colors(0.0);
+            obj.modify_vertices(&mut move |current| {
+                for i in 0..current.len() {
+                    current[i] = vertices[i];
+                }
+                let _: Vec<usize> = vertices[current.len()..].iter().map(|i| {current.push(*i); 0usize}).collect();
+            });
+            obj.modify_faces(&mut move |current| {
+                let _: Vec<usize> = indices[current.len()..].iter().map(|i| {current.push(*i); 0usize}).collect();
+            });
+            obj.modify_uvs(&mut move |current| {
+                for i in 0..current.len() {
+                    current[i] = texture_idx[i];
+                }
+                let _: Vec<usize> = texture_idx[current.len()..].iter().map(|i| {current.push(*i); 0usize}).collect();
+            });
+            //obj.modify_faces(&move |_| indices);
+            //obj.modify_uvs(&move |_| texture_idx);
+
+            // move camera
             let dist = camera.dist();
             camera.set_dist(dist + 0.03);
             let yaw = camera.yaw();
@@ -138,7 +173,7 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
             let diff = time::get_time() - start;
             println!("At {} : {}", state.time, diff);
         }
-        window.draw_state(&mut state, 180.0);
+        // window.draw_state(&mut state, 180.0);
     }
 }
 
