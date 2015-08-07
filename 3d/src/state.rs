@@ -25,7 +25,7 @@ const GROW_SPEED: f32 = 0.01;
 const MAX_SPEED: f32  = 0.02;
 const GRAVITY: f32 = 0.01;
 const GRAV_TOP: f32 = 10.0;
-const GRAV_BOTTOM: f32 = 7.0;
+const GRAV_BOTTOM: f32 = 8.0;
 
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Edge {
@@ -140,12 +140,13 @@ impl State {
         let circumference = fnum * MAX_LEN * 0.2;
         let rad = circumference / 2.0 / f32::consts::PI;
         for i in 0..num {
-            let mrad = rad; // + (i as f32 / 20.0).sin();
+            let mrad = rad;
+            let jiggle = (i as f32 / 20.0).sin();
             self.pts.push(Node {
                 pos: Pnt3{
                     x: (i as f32 * scale).cos() * mrad,
-                    y: (i as f32 * scale).sin() * mrad,
-                    z: 0.0, // mrad,// - rad, // 0.0,
+                    z: (i as f32 * scale).sin() * mrad,
+                    y: jiggle, // mrad,// - rad, // 0.0,
                 },
                 siblings: 2,
                 age: 0,
@@ -430,13 +431,8 @@ impl State {
                 }
                 if self.pts[i].trunk {
                     self.pts[i].vel.y += GRAVITY;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
-                    /*
-                    if self.pts[i].pos.y < GRAV_BOTTOM {
-                        self.pts[i].vel.y += GRAVITY;
-                    } else {
-                        self.pts[i].vel.y += GRAVITY * (self.pts[i].pos.y - GRAV_BOTTOM) / (GRAV_TOP - GRAV_BOTTOM);
-                    }
-                    */
+                } else if self.pts[i].pos.y > GRAV_BOTTOM {
+                    self.pts[i].vel.y -= GRAVITY / 4.0;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
                 }
             } else {
                 self.pts[i].vel.y = 0.0;
