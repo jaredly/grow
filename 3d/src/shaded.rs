@@ -133,6 +133,7 @@ uniform mat4 view;
 uniform mat4 transform;
 uniform mat3 scale;
 varying vec3 uv_as_a_color;
+varying float opacity;
 
 vec3 hsv2rgb(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -143,14 +144,18 @@ vec3 hsv2rgb(vec3 c) {
 void main() {
     // float vtime = sin(time / 25.0) * 0.4 + 0.5;
     if (uvs.y == 0) {
-        uv_as_a_color = hsv2rgb(vec3(1.0 / 3.0, 1.0, 0.5 * uvs.x));
+        uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
+        opacity = 0.8;
     } else if (uvs.x > 0.5) {
-        uv_as_a_color = hsv2rgb(vec3(1.0 / 3.0, 1.0, 0.5 * uvs.x));
+        uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
+        opacity = 0.8;
+    } else if (uvs.x > 0.4) {
+        float diff = (uvs.x - 0.4) * 10.0;
+        uv_as_a_color = hsv2rgb(vec3((0.33 - 0.075) * diff + 0.075, (1.0 - 0.68) * diff + 0.68, 0.5 * uvs.x));
+        opacity = 0.8;
     } else {
-        //float hue = uvs.y == 0 ? 1.0 / 3.0 : 0.075;
-        //float sat = uvs.y == 0 ? 1.0 : 0.68;
-        //float val = 0.5 * uvs.x  + (uvs.y == 1 ? 0.3 : 0.0); // uvs.y == 0 ? 
-        uv_as_a_color = hsv2rgb(vec3(0.075, 0.68, 0.5 * uvs.x + 0.3));
+        uv_as_a_color = hsv2rgb(vec3(0.075, 0.68, 0.5 * uvs.x + 0.15));
+        opacity = 0.9;
     }
     // uv_as_a_color  = vec3(uvs.y * 0.6, 1.0 - uvs.y * 0.6, uvs.y * .2);
     // uv_as_a_color  = vec3(uvs.x, 0.1, uvs.x / 2.0 + 0.5);
@@ -161,7 +166,8 @@ void main() {
 const ANOTHER_VERY_LONG_STRING: &'static str =
 "#version 120
 varying vec3 uv_as_a_color;
+varying float opacity;
 void main() {
-    gl_FragColor = vec4(uv_as_a_color, 0.8);
+    gl_FragColor = vec4(uv_as_a_color, opacity);
 }
 ";

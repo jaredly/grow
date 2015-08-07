@@ -89,6 +89,11 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
         }
     });
 
+    if state.time == 0 {
+        while state.tris.len() == 0 {
+            state.tick();
+        }
+    }
     let vertices = state.coords();
     let indices = state.tris.clone();
     let texture_idx = state.coord_colors(0.0);
