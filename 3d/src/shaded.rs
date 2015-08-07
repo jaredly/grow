@@ -142,10 +142,16 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
     // float vtime = sin(time / 25.0) * 0.4 + 0.5;
-    float hue = uvs.y == 0 ? 1.0 / 3.0 : 0.075;
-    float sat = uvs.y == 0 ? 1.0 : 0.68;
-    float val = 0.5 * uvs.x  + (uvs.y == 1 ? 0.3 : 0.0); // uvs.y == 0 ? 
-    uv_as_a_color = hsv2rgb(vec3(hue, sat, val));
+    if (uvs.y == 0) {
+        uv_as_a_color = hsv2rgb(vec3(1.0 / 3.0, 1.0, 0.5 * uvs.x));
+    } else if (uvs.x > 0.5) {
+        uv_as_a_color = hsv2rgb(vec3(1.0 / 3.0, 1.0, 0.5 * uvs.x));
+    } else {
+        //float hue = uvs.y == 0 ? 1.0 / 3.0 : 0.075;
+        //float sat = uvs.y == 0 ? 1.0 : 0.68;
+        //float val = 0.5 * uvs.x  + (uvs.y == 1 ? 0.3 : 0.0); // uvs.y == 0 ? 
+        uv_as_a_color = hsv2rgb(vec3(0.075, 0.68, 0.5 * uvs.x + 0.3));
+    }
     // uv_as_a_color  = vec3(uvs.y * 0.6, 1.0 - uvs.y * 0.6, uvs.y * .2);
     // uv_as_a_color  = vec3(uvs.x, 0.1, uvs.x / 2.0 + 0.5);
     gl_Position = view * transform * mat4(scale) * vec4(position, 1.0);
