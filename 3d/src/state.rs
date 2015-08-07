@@ -140,12 +140,12 @@ impl State {
         let circumference = fnum * MAX_LEN * 0.2;
         let rad = circumference / 2.0 / f32::consts::PI;
         for i in 0..num {
-            let mrad = rad + (i as f32 / 20.0).sin();
+            let mrad = rad; // + (i as f32 / 20.0).sin();
             self.pts.push(Node {
                 pos: Pnt3{
                     x: (i as f32 * scale).cos() * mrad,
                     y: (i as f32 * scale).sin() * mrad,
-                    z: mrad - rad, // 0.0,
+                    z: 0.0, // mrad,// - rad, // 0.0,
                 },
                 siblings: 2,
                 age: 0,

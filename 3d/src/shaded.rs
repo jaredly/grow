@@ -144,7 +144,11 @@ vec3 hsv2rgb(vec3 c) {
 void main() {
     // float vtime = sin(time / 25.0) * 0.4 + 0.5;
     if (uvs.y == 0) {
-        uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
+        if (uvs.x > 0.9) {
+            uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 + (uvs.x - 0.9) * 2));
+        } else {
+            uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
+        }
         opacity = 0.8;
     } else if (uvs.x > 0.5) {
         uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
