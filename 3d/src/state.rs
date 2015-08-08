@@ -49,6 +49,40 @@ struct Node {
     trunk: bool,
 }
 
+impl Node {
+    fn new(pos: Pnt3<f32>, left: usize, right: usize) -> Node {
+        Node {
+            pos: pos,
+            siblings: 2,
+            age: 0,
+            trunk: true,
+            vel: Vec3::new(0.0, 0.0, 0.0),
+            nclose: 0,
+            dead: 0,
+            left: left,
+            right: right,
+        }
+    }
+
+    fn radial(theta: f32, radius: f32, left: usize, right: usize, cx: f32, cz: f32) -> Node {
+        Node {
+            pos: Pnt3 {
+                x: cx + theta.sin() * radius,
+                z: cz + theta.cos() * radius,
+                y: 0.0,
+            },
+            siblings: 2,
+            age: 0,
+            trunk: true,
+            vel: Vec3::new(0.0, 0.0, 0.0),
+            nclose: 0,
+            dead: 0,
+            left: left,
+            right: right,
+        }
+    }
+}
+
 pub trait DrawState {
     fn draw_state(&mut self, state: &mut State, off: f32);
 }
@@ -134,11 +168,89 @@ impl State {
         ).collect()
     }
 
+    pub fn add_triangle(&mut self, rad: f32, x: f32, z: f32) {
+
+        let n0 = self.pts.len();
+        self.pts.push(Node::radial(0.0, rad * 2.0, n0 + 1, n0 + 2, x, z));
+        self.pts.push(Node::radial(f32::consts::PI / 3.0 * 2.0, rad, n0 + 2, n0 + 0, x, z));
+        self.pts.push(Node::radial(f32::consts::PI / 3.0 * 4.0, rad, n0 + 0, n0 + 1, x, z));
+
+        self.tris.push(Pnt3::new(n0 as u32, n0 as u32 + 1, n0 as u32 + 2));
+
+        let len = MAX_LEN / 4.0;
+        let curlen = self.pts[0].pos.dist(&self.pts[1].pos);
+
+        self.edges.push(Edge {
+            a: n0,
+            b: n0 + 1,
+            len: len,
+            curlen: curlen,
+            age: 0,
+        });
+
+        self.edges.push(Edge {
+            a: n0 + 1,
+            b: n0 + 2,
+            len: len,
+            curlen: curlen,
+            age: 0,
+        });
+
+        self.edges.push(Edge {
+            a: n0 + 0,
+            b: n0 + 2,
+            len: len,
+            curlen: curlen,
+            age: 0,
+        });
+    }
+
     pub fn start(&mut self, num: usize) {
         let fnum = num as f32;
         let scale = 2.0 * f32::consts::PI / fnum;
         let circumference = fnum * MAX_LEN * 0.2;
-        let rad = circumference / 2.0 / f32::consts::PI;
+        let rad = 0.2; // circumference / 2.0 / f32::consts::PI;
+
+        self.add_triangle(rad, 0.0, 0.0);
+        self.add_triangle(rad, 0.4, 0.4);
+        self.add_triangle(rad, -0.4, 0.4);
+
+        /*
+        self.pts.push(Node::radial(0.0, rad * 2.0, 1, 2));
+        self.pts.push(Node::radial(f32::consts::PI / 3.0 * 2.0, rad, 2, 0));
+        self.pts.push(Node::radial(f32::consts::PI / 3.0 * 4.0, rad, 0, 1));
+
+        self.tris.push(Pnt3::new(0, 1, 2));
+
+        let len = MAX_LEN / 4.0;
+        let curlen = self.pts[0].pos.dist(&self.pts[1].pos);
+
+        self.edges.push(Edge {
+            a: 0,
+            b: 1,
+            len: len,
+            curlen: curlen,
+            age: 0,
+        });
+
+        self.edges.push(Edge {
+            a: 1,
+            b: 2,
+            len: len,
+            curlen: curlen,
+            age: 0,
+        });
+
+        self.edges.push(Edge {
+            a: 0,
+            b: 2,
+            len: len,
+            curlen: curlen,
+            age: 0,
+        });
+        */
+
+        /*
         for i in 0..num {
             let mrad = rad;
             let jiggle = (i as f32 / 20.0).sin();
@@ -177,6 +289,7 @@ impl State {
             });
             */
         }
+        */
     }
 
     pub fn tick(&mut self) {
@@ -431,9 +544,9 @@ impl State {
                 }
                 if self.pts[i].trunk {
                     self.pts[i].vel.y += GRAVITY;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
-                } else if self.pts[i].pos.y > GRAV_BOTTOM {
+                } /* BUSHY else if self.pts[i].pos.y > GRAV_BOTTOM {
                     self.pts[i].vel.y -= GRAVITY / 4.0;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
-                }
+                } */
             } else {
                 self.pts[i].vel.y = 0.0;
             }
