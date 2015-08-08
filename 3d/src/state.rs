@@ -216,41 +216,6 @@ impl State {
         self.add_triangle(rad, -0.4, 0.4);
 
         /*
-        self.pts.push(Node::radial(0.0, rad * 2.0, 1, 2));
-        self.pts.push(Node::radial(f32::consts::PI / 3.0 * 2.0, rad, 2, 0));
-        self.pts.push(Node::radial(f32::consts::PI / 3.0 * 4.0, rad, 0, 1));
-
-        self.tris.push(Pnt3::new(0, 1, 2));
-
-        let len = MAX_LEN / 4.0;
-        let curlen = self.pts[0].pos.dist(&self.pts[1].pos);
-
-        self.edges.push(Edge {
-            a: 0,
-            b: 1,
-            len: len,
-            curlen: curlen,
-            age: 0,
-        });
-
-        self.edges.push(Edge {
-            a: 1,
-            b: 2,
-            len: len,
-            curlen: curlen,
-            age: 0,
-        });
-
-        self.edges.push(Edge {
-            a: 0,
-            b: 2,
-            len: len,
-            curlen: curlen,
-            age: 0,
-        });
-        */
-
-        /*
         for i in 0..num {
             let mrad = rad;
             let jiggle = (i as f32 / 20.0).sin();
@@ -345,28 +310,8 @@ impl State {
         }
     }
 
-    fn push_away(&mut self) {
-        let mut bins: HashMap<(usize, usize, usize), Vec<usize>> = HashMap::new();
-        let mut minx = 0.0;
-        let mut miny = 0.0;
-        let mut minz = 0.0;
-        // TODO figure out: would using the max to reduce false-reads at the top-end of the
-        // help at all?
-        //let mut maxx = 0.0;
-        //let mut maxy = 0.0;
-        //let mut maxz = 0.0;
-        for i in 0..self.pts.len() {
-            let Pnt3{x, y, z} = self.pts[i].pos;
-            if x < minx {minx = x;}
-            //if x > maxx {maxx = x;}
-            if y < miny {miny = y;}
-            //if y > maxy {maxy = y;}
-            if z < minz {minz = z;}
-            //if z > maxz {maxz = z;}
-        }
-        //let xscale = (maxx - minx) / CLOSE_DIST;
-        //let yscale = (maxy - miny) / CLOSE_DIST;
-        //let zscale = (maxy - minz) / CLOSE_DIST;
+    fn make_bins(&mut self, minx: f32, miny: f32, minz: f32) -> HashMap<(usize, usize, usize), Vec<usize>> {
+        let mut bins = HashMap::new();
         for i in 0..self.pts.len() {
             let Pnt3{x, y, z} = self.pts[i].pos;
             let pos = (
@@ -377,6 +322,25 @@ impl State {
             let val = bins.entry(pos).or_insert(vec![]);
             val.push(i);
         }
+        bins
+    }
+
+    fn get_mins(&mut self) -> (f32, f32, f32) {
+        let mut minx = 0.0;
+        let mut miny = 0.0;
+        let mut minz = 0.0;
+        for i in 0..self.pts.len() {
+            let Pnt3{x, y, z} = self.pts[i].pos;
+            if x < minx {minx = x;}
+            if y < miny {miny = y;}
+            if z < minz {minz = z;}
+        }
+        (minx, miny, minz)
+    }
+
+    fn push_away(&mut self) {
+        let (minx, miny, minz) = self.get_mins();
+        let mut bins = self.make_bins(minx, miny, minz);
         //println!("Min {} {} {}", minx, miny, minz);
         //println!("Bin: {:?}", bins);
         for i in 0..self.pts.len() {
