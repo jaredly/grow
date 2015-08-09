@@ -5,22 +5,20 @@ use std::f32;
 use na::{Pnt2, Vec3, Pnt3, FloatPnt, Norm};
 use std::collections::HashMap;
 
-//let SHOW_POINTS = false;
-//let COLOR_SCHEME = 'age';
-//const RANDOM = false;
-
 const TOLERANCE: f32 = 0.001;
 const DAMP: f32 = 0.75;
 const STICK_K: f32 = 0.09;
 const AVOID_K: f32 = 0.02;
 
 const MAX_LEN: f32 = 0.5;
-const TOO_CROWDED: usize = 34; // neighbors
+const TOO_CROWDED: usize = 34;
 const MIN_CROWD: i32 = 5;
 const TOO_DEAD: i32 = 100;
 const DEAD_MOTION: f32 = 0.0001;
 const CLOSE_DIST: f32 = 2.0;
+const CLOSE_DIST_SQ: f32 = 2.0 * 2.0;
 const PUSH_DIST: f32 = 0.8;
+const PUSH_DIST_SQ: f32 = 0.8 * 0.8;
 const GROW_SPEED: f32 = 0.01;
 const MAX_SPEED: f32  = 0.02;
 const GRAVITY: f32 = 0.01;
@@ -47,6 +45,22 @@ struct Node {
     left: usize,
     right: usize,
     trunk: bool,
+}
+
+macro_rules! check_bin {
+    ($bins:expr, $pos:expr, $me:expr, $first:expr, $second:ident) => {
+        $bins.get($pos).map::<usize, _>(
+            |arr| arr.iter().map(|j|{$me.push_two($first, *j)}).fold(0, |a, i| a + i)
+        ).map(|val| $second += val);
+        /* An alternate way that seems slower
+        match $bins.get($pos) {
+            Some(arr) => {
+                for j in arr {$second += $me.push_two($first, *j);}
+            },
+            None => {}
+        }
+        */
+    }
 }
 
 impl Node {
@@ -90,8 +104,8 @@ pub trait DrawState {
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 pub struct State {
     pub time: i32,
-    pts: Vec<Node>,// = [Pnt3{x: 0.0, y: 0.0, z:0.0}; 1000];
-    edges: Vec<Edge>,// = [Edge{a: 0, b: 0}; 1000];
+    pts: Vec<Node>,
+    edges: Vec<Edge>,
     pub tris: Vec<Pnt3<u32>>,
 }
 
@@ -124,7 +138,6 @@ impl State {
             time: 0,
             pts: vec![],
             edges: vec![],
-            // added later
             tris: vec![],
         }
     }
@@ -162,9 +175,7 @@ impl State {
             Pnt2::new(
                 1.0 - n.age as f32 / self.time as f32,
                 if n.trunk {1.0} else {0.0}
-                // if n.siblings > 32 {1.0} else {(n.siblings - 2) as f32 / 30.0}
             )
-            // hsl(((1.8 - n.age as f32 / self.time as f32) * 180.0 + off) % 360.0, 1.0, 0.3)
         ).collect()
     }
 
@@ -206,55 +217,11 @@ impl State {
     }
 
     pub fn start(&mut self, num: usize) {
-        let fnum = num as f32;
-        let scale = 2.0 * f32::consts::PI / fnum;
-        let circumference = fnum * MAX_LEN * 0.2;
-        let rad = 0.2; // circumference / 2.0 / f32::consts::PI;
+        let rad = 0.2;
 
         self.add_triangle(rad, 0.0, 0.0);
         self.add_triangle(rad, 0.4, 0.4);
         self.add_triangle(rad, -0.4, 0.4);
-
-        /*
-        for i in 0..num {
-            let mrad = rad;
-            let jiggle = (i as f32 / 20.0).sin();
-            self.pts.push(Node {
-                pos: Pnt3{
-                    x: (i as f32 * scale).cos() * mrad,
-                    z: (i as f32 * scale).sin() * mrad,
-                    y: jiggle, // mrad,// - rad, // 0.0,
-                },
-                siblings: 2,
-                age: 0,
-                trunk: true,
-                vel: Vec3::new(0.0, 0.0, 0.0),
-                nclose: 0,
-                dead: 0,
-                left: if i == 0 {num - 1} else {i - 1},
-                right: (i+1) % num,
-            });
-        }
-
-        for i in 0..num {
-            self.edges.push(Edge{
-                a: i,
-                b: (i + 1) % num,
-                len: MAX_LEN / 4.0,
-                curlen: self.pts[i].pos.dist(&self.pts[((i + 1) % num)].pos),
-                age: 0,
-            });
-            /*
-            self.edges.push(Edge{
-                a: i,
-                b: (i + 2) % num,
-                len: MAX_LEN / 2.0,
-                curlen: self.pts[i].pos.dist(&self.pts[((i + 2) % num)].pos),
-                age: 0,
-            });
-            */
-        }
-        */
     }
 
     pub fn tick(&mut self) {
@@ -269,19 +236,9 @@ impl State {
     fn adjust(&mut self) {
         for i in 0..self.edges.len() {
             let Edge{a, b, len, ..} = self.edges[i];
-            /* Worse perf!
-            if self.pts[a].dead > TOO_DEAD && self.pts[b].dead > TOO_DEAD {
-                continue;
-            }
-            */
             let p1 = self.pts[a].pos;
             let p2 = self.pts[b].pos;
             let mag = p1.dist(&p2);
-            /* Worse perf!
-            if (len - mag).abs() < TOLERANCE {
-                continue;
-            }
-            */
             self.edges[i].curlen = mag;
             let diff = (p2 - p1).normalize();
             let mdiff = diff * (len - mag) / 2.0 * -STICK_K;
@@ -329,18 +286,17 @@ impl State {
         let mut minx = 0.0;
         let mut miny = 0.0;
         let mut minz = 0.0;
-        for i in 0..self.pts.len() {
-            let Pnt3{x, y, z} = self.pts[i].pos;
-            if x < minx {minx = x;}
-            if y < miny {miny = y;}
-            if z < minz {minz = z;}
+        for pnt in self.pts.iter() {
+            if pnt.pos.x < minx {minx = pnt.pos.x;}
+            if pnt.pos.y < miny {miny = pnt.pos.y;}
+            if pnt.pos.z < minz {minz = pnt.pos.z;}
         }
         (minx, miny, minz)
     }
 
     fn push_away(&mut self) {
         let (minx, miny, minz) = self.get_mins();
-        let mut bins = self.make_bins(minx, miny, minz);
+        let bins = self.make_bins(minx, miny, minz);
         //println!("Min {} {} {}", minx, miny, minz);
         //println!("Bin: {:?}", bins);
         for i in 0..self.pts.len() {
@@ -356,63 +312,28 @@ impl State {
             let ny = if yp.round() > yp {yn + 1} else if yn > 0 {yn - 1} else {yn};
             let nz = if zp.round() > zp {zn + 1} else if zn > 0 {zn - 1} else {zn};
 
-            match bins.get(&(xn, yn, zn)) {
-                Some(arr) => {
-                    for j in arr {close += self.push_two(i, *j);}
-                },
-                None => {}
-            }
+            check_bin!(bins, &(xn, yn, zn), self, i, close);
             if nx != xn {
-                match bins.get(&(nx, yn, zn)) {
-                Some(arr) => {
-                    for j in arr {close += self.push_two(i, *j);}
-                },
-                    None => {}
-                }
+                check_bin!(bins, &(nx, yn, zn), self, i, close);
                 if ny != yn {
-                    match bins.get(&(nx, ny, zn)) {
-                Some(arr) => {
-                    for j in arr {close += self.push_two(i, *j);}
-                },
-                        None => {}
-                    }
+                    check_bin!(bins, &(nx, ny, zn), self, i, close);
                     if nz != zn {
-                        match bins.get(&(nx, ny, nz)) {
-                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
-                            None => {}
-                        }
+                        check_bin!(bins, &(nx, ny, nz), self, i, close);
                     }
                 }
                 if nz != zn {
-                    match bins.get(&(nx, yn, nz)) {
-                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
-                        None => {}
-                    }
+                    check_bin!(bins, &(nx, yn, nz), self, i, close);
                 }
             }
             if ny != yn {
-                match bins.get(&(xn, ny, zn)) {
-                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
-                    None => {}
-                }
+                check_bin!(bins, &(xn, ny, zn), self, i, close);
                 if nz != zn {
-                    match bins.get(&(xn, ny, nz)) {
-                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
-                        None => {}
-                    }
+                    check_bin!(bins, &(xn, ny, nz), self, i, close);
                 }
             }
             if nz != zn {
-                match bins.get(&(xn, yn, nz)) {
-                Some(arr) => { for j in arr {close += self.push_two(i, *j);} },
-                    None => {}
-                }
+                check_bin!(bins, &(xn, yn, nz), self, i, close);
             }
-            /*
-            for j in 0..self.pts.len() {
-                close += self.push_two(i, j);
-            }
-            */
             self.pts[i].nclose = close;
         }
     }
@@ -422,13 +343,14 @@ impl State {
             return 0;
         }
         let atob = self.pts[j].pos - self.pts[i].pos;
-        let dist = atob.norm();
-        if dist > PUSH_DIST {
-            return if dist < CLOSE_DIST {1} else {0}
+        let sqdist = atob.sqnorm();
+        if sqdist > PUSH_DIST_SQ {
+            return if sqdist < CLOSE_DIST_SQ {1} else {0}
         }
         if self.pts[i].dead > TOO_DEAD && self.pts[j].dead > TOO_DEAD {
             return 1;
         }
+        let dist = atob.norm();
         let diff = atob.normalize();
         let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
         if self.pts[i].dead > TOO_DEAD {
@@ -492,22 +414,12 @@ impl State {
 
     fn move_things(&mut self) {
         for i in 0..self.pts.len() {
-            /*
-            if self.pts[i].dead > TOO_DEAD {
-                continue;
-            }
-            if self.pts[i].nclose > TOO_CROWDED && self.pts[i].vel.norm() < DEAD_MOTION {
-                self.pts[i].dead += 1;
-            } else {
-                self.pts[i].dead = 0;
-            }
-            */
             if i >= 10 {
                 if self.pts[i].pos.y > GRAV_TOP {
                     self.pts[i].trunk = false;
                 }
                 if self.pts[i].trunk {
-                    self.pts[i].vel.y += GRAVITY;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
+                    self.pts[i].vel.y += GRAVITY;
                 } /* BUSHY else if self.pts[i].pos.y > GRAV_BOTTOM {
                     self.pts[i].vel.y -= GRAVITY / 4.0;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
                 } */

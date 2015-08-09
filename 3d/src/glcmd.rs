@@ -3,26 +3,24 @@ extern crate kiss3d;
 extern crate time;
 extern crate glfw;
 extern crate image;
-use image::{ImageBuffer, Rgba};
-use std::fs::File;
 
 use shaded;
 use util;
 
-use std::sync::mpsc;
-use std::sync::mpsc::{Sender, Receiver};
-
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::sync::mpsc;
+use std::sync::mpsc::{Sender, Receiver};
+use std::fs::File;
+
+use image::ImageBuffer;
 use na::{Pnt3, Vec2};
 use state::{State, DrawState};
 use kiss3d::window::Window;
 use kiss3d::camera::ArcBall;
-use kiss3d::resource::{Shader, ShaderAttribute, ShaderUniform, Material, Mesh, FramebufferManager};
-use kiss3d::builtin::UvsMaterial;
+use kiss3d::resource::{Material, Mesh};
 use glfw::{Action, Key, WindowEvent};
 use std::thread;
-use std::path::Path;
 
 impl DrawState for Window {
     fn draw_state(&mut self, state: &mut State, off: f32) {
@@ -42,13 +40,11 @@ fn shoot(window: &mut Window, outfile: String) {
     let mut buf = Vec::new();
     window.snap_rect(&mut buf, 0, 0, width as usize, height as usize);
 
-    thread::spawn(move || {
-        vflip(&mut buf, (width * 3.0) as usize, height as usize);
-        let img = image::ImageBuffer::from_raw(width as u32, height as u32, buf).expect("Opening image for writing");
-        let mut fout = File::create(outfile.clone()).ok().expect("Open file");
-        image::ImageRgb8(img).save(&mut fout, image::PNG).ok().expect("Saving image");
-        println!("Wrote {}", outfile);
-    });
+    vflip(&mut buf, (width * 3.0) as usize, height as usize);
+    let img = ImageBuffer::from_raw(width as u32, height as u32, buf).expect("Opening image for writing");
+    let mut fout = File::create(outfile.clone()).ok().expect("Open file");
+    image::ImageRgb8(img).save(&mut fout, image::PNG).ok().expect("Saving image");
+    println!("Wrote {}", outfile);
 }
 
 fn shoot_at(window: &mut Window, outfile: String, sender: Sender<(String, Box<Vec<u8>>, usize, usize)>) {
@@ -68,6 +64,26 @@ fn vflip(vec: &mut [u8], width: usize, height: usize) {
     }
 }
 
+pub fn shoot_one(window: &mut Window, infile: String, at: Pnt3<f32>, target: Pnt3<f32>) {
+    let mut state = util::load_state(infile.clone());
+    let mut camera = ArcBall::new(at, target);
+
+    let vertices = state.coords();
+    let indices = state.tris.clone();
+    let texture_idx = state.coord_colors(0.0);
+    let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
+    let material   = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::default()) as Box<Material + 'static>));
+    let mut obj = window.add_mesh(mesh, na::one());
+    obj.set_color(0.0, 1.0, 0.0);
+    obj.enable_backface_culling(false);
+    obj.set_lines_width(15.0);
+    obj.set_material(material);
+
+    window.render_with_camera(&mut camera);
+    window.render_with_camera(&mut camera);
+    shoot(window, infile + ".png");
+}
+
 pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<String>, hollow: bool, record: bool) {
     let mut state = util::load_maybe(infile.clone(), 10);
     let mut camera = ArcBall::new(Pnt3::new(0.0f32, 0.0, -7.0), Pnt3::new(0.0, 1.5, 0.0));
@@ -82,7 +98,7 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
                 Err(_) => {return},
             };
             vflip(&mut *buf, width * 3, height);
-            let img = image::ImageBuffer::from_raw(width as u32, height as u32, *buf).expect("Create image");
+            let img = ImageBuffer::from_raw(width as u32, height as u32, *buf).expect("Create image");
             let mut fout = File::create(outfile.clone()).ok().expect("Open file");
             image::ImageRgb8(img).save(&mut fout, image::PNG).ok().expect("Save image");
             println!("Wrote {}", outfile);
@@ -102,7 +118,6 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
     let mut obj = window.add_mesh(mesh, na::one());
     obj.set_color(0.0, 1.0, 0.0);
     obj.enable_backface_culling(false);
-    // obj.set_surface_rendering_activation(false);
     obj.set_lines_width(15.0);
     obj.set_material(material);
 
@@ -158,8 +173,6 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
                 }
                 let _: Vec<usize> = texture_idx[current.len()..].iter().map(|i| {current.push(*i); 0usize}).collect();
             });
-            //obj.modify_faces(&move |_| indices);
-            //obj.modify_uvs(&move |_| texture_idx);
 
             // move camera
             let dist = camera.dist();

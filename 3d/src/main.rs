@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-#![allow(unused_imports)]
 extern crate kiss3d;
 extern crate bincode;
 extern crate nalgebra as na;
@@ -32,6 +31,7 @@ Usage:
   grow show <maxtime> <outfile> [--start=<path>] [--hollow] [--record]
   grow make <maxtime> <outfile> [--start=<path>]
   grow draw <infile> <outfile>
+  grow shoot <infile> <x> <y> <z> <tx> <ty> <tz>
   grow once
   grow info <infile>
   grow display <infile> [--hollow]
@@ -52,10 +52,17 @@ struct Args {
     flag_start: Option<String>,
     flag_hollow: bool,
     flag_record: bool,
+    arg_x: Option<f32>,
+    arg_y: Option<f32>,
+    arg_z: Option<f32>,
+    arg_tx: Option<f32>,
+    arg_ty: Option<f32>,
+    arg_tz: Option<f32>,
     cmd_display: bool,
     cmd_info: bool,
     cmd_make: bool,
     cmd_show: bool,
+    cmd_shoot: bool,
     cmd_once: bool,
     cmd_draw: bool,
 }
@@ -123,9 +130,18 @@ fn main() {
 
     window.set_background_color(1.0, 1.0, 1.0);
     window.set_light(Light::StickToCamera);
-    // window.set_light(Light::Absolute(Pnt3::new(10.0, 1.0, 0.0)));
 
-    if args.cmd_draw {
+    if args.cmd_shoot {
+        glcmd::shoot_one(&mut window, args.arg_infile.unwrap(), Pnt3::new(
+          args.arg_x.unwrap(),
+          args.arg_y.unwrap(),
+          args.arg_z.unwrap()
+        ), Pnt3::new(
+          args.arg_tx.unwrap(),
+          args.arg_ty.unwrap(),
+          args.arg_tz.unwrap()
+        ));
+    } else if args.cmd_draw {
         drawcmd::draw(&mut window, args.arg_infile.unwrap(), args.arg_outfile.unwrap());
     } else if args.cmd_display {
         glcmd::display(&mut window, args.arg_infile.unwrap(), args.flag_hollow);

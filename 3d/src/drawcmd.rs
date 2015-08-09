@@ -4,34 +4,26 @@ extern crate image;
 extern crate gl;
 extern crate libc;
 
-use state;
 use util;
-use aaline::DrawLine;
 
 use kiss3d::camera::ArcBall;
 use kiss3d::window::Window;
-use kiss3d::resource::FramebufferManager;
-use std::f32::consts::PI;
-use na::{Vec2, Pnt3, PerspMat3, Iso3, Vec3, ToHomogeneous};
-use state::{State, DrawState};
-use image::{ImageBuffer, Rgba};
+use na::{Vec2, Pnt3};
+use state::{DrawState};
 use std::fs::File;
 use std::mem;
 use std::ptr;
-//use core::ptr;
 
 pub fn makeit(outfile: String) {
     let num = 4 * 500 * 500 as usize;
     let my_data: Vec<u8> = unsafe {
         let raw: *mut libc::c_void = libc::malloc(num as u64) as *mut libc::c_void;
         gl::ReadPixels(0, 0, 500, 500, gl::RGBA, gl::UNSIGNED_BYTE, raw);
-        // data.set_len(500 * 500 * 4);
         let mut dst = Vec::with_capacity(num);
         dst.set_len(num);
         ptr::copy_nonoverlapping(mem::transmute(raw), dst.as_mut_ptr(), num);
         libc::free(raw);
         dst
-        //Vec::from_raw_buf(mem::transmute(raw), 500 * 500 * 4)
     };
     let img = image::ImageBuffer::from_raw(500, 500, my_data).unwrap();
     let mut fout = File::create(outfile).unwrap();
