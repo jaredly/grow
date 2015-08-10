@@ -4,6 +4,9 @@ extern crate nalgebra as na;
 use std::f32;
 use na::{Pnt2, Vec3, Pnt3, FloatPnt, Norm};
 use std::collections::HashMap;
+use std::sync::mpsc;
+use std::thread;
+use std::mem;
 
 const TOLERANCE: f32 = 0.001;
 const DAMP: f32 = 0.75;
@@ -37,7 +40,6 @@ struct Edge {
 #[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Node {
     pos: Pnt3<f32>,
-    vel: Vec3<f32>,
     nclose: usize,
     siblings: usize,
     age: usize,
@@ -47,10 +49,12 @@ struct Node {
     trunk: bool,
 }
 
+type Bins = HashMap<(usize, usize, usize), Vec<usize>>;
+
 macro_rules! check_bin {
     ($bins:expr, $pos:expr, $me:expr, $first:expr, $second:ident) => {
         $bins.get($pos).map::<usize, _>(
-            |arr| arr.iter().map(|j|{$me.push_two($first, *j)}).fold(0, |a, i| a + i)
+            |arr| arr.iter().map(|j|{push_two(&$me.pts, $first, *j, &mut $me.vels)}).fold(0, |a, i| a + i)
         ).map(|val| $second += val);
         /* An alternate way that seems slower
         match $bins.get($pos) {
@@ -63,14 +67,146 @@ macro_rules! check_bin {
     }
 }
 
+macro_rules! check_bin_mm {
+    ($bins:expr, $pos:expr, $pts:expr, $sender:expr, $first:expr, $second:ident) => {
+        $bins.get($pos).map::<usize, _>(
+            |arr| arr.iter().map(|j|{push_two_mm($pts, $first, *j, $sender)}).fold(0, |a, i| a + i)
+        ).map(|val| $second += val);
+        /* An alternate way that seems slower
+        match $bins.get($pos) {
+            Some(arr) => {
+                for j in arr {$second += $me.push_two($first, *j);}
+            },
+            None => {}
+        }
+        */
+    }
+}
+
+fn calc_one((minx, miny, minz): (f32, f32, f32), pts: &Vec<Node>, i: usize, bins: &Bins, sender: &mpsc::Sender<(usize, Vec3<f32>)>, close_sender: &mpsc::Sender<(usize, usize)>) {
+    let mut close: usize = 0;
+    let Pnt3{x, y, z} = pts[i].pos;
+    let xp = (x - minx) / CLOSE_DIST / 2.0;
+    let yp = (y - miny) / CLOSE_DIST / 2.0;
+    let zp = (z - minz) / CLOSE_DIST / 2.0;
+    let xn = xp as usize;
+    let yn = yp as usize;
+    let zn = zp as usize;
+    let nx = if xp.round() > xp {xn + 1} else if xn > 0 {xn - 1} else {xn};
+    let ny = if yp.round() > yp {yn + 1} else if yn > 0 {yn - 1} else {yn};
+    let nz = if zp.round() > zp {zn + 1} else if zn > 0 {zn - 1} else {zn};
+
+    check_bin_mm!(bins, &(xn, yn, zn), pts, sender, i, close);
+    if nx != xn {
+        check_bin_mm!(bins, &(nx, yn, zn), pts, sender, i, close);
+        if ny != yn {
+            check_bin_mm!(bins, &(nx, ny, zn), pts, sender, i, close);
+            if nz != zn {
+                check_bin_mm!(bins, &(nx, ny, nz), pts, sender, i, close);
+            }
+        }
+        if nz != zn {
+            check_bin_mm!(bins, &(nx, yn, nz), pts, sender, i, close);
+        }
+    }
+    if ny != yn {
+        check_bin_mm!(bins, &(xn, ny, zn), pts, sender, i, close);
+        if nz != zn {
+            check_bin_mm!(bins, &(xn, ny, nz), pts, sender, i, close);
+        }
+    }
+    if nz != zn {
+        check_bin_mm!(bins, &(xn, yn, nz), pts, sender, i, close);
+    }
+    close_sender.send((i, close));
+}
+
+fn push_two_mm(pts: &Vec<Node>, i: usize, j: usize, sender: &mpsc::Sender<(usize, Vec3<f32>)>) -> usize {
+    if j == i || pts[i].left == j || pts[i].right == j {
+        return 0;
+    }
+    let atob = pts[j].pos - pts[i].pos;
+    let sqdist = atob.sqnorm();
+    if sqdist > PUSH_DIST_SQ {
+        return if sqdist < CLOSE_DIST_SQ {1} else {0}
+    }
+    if pts[i].dead > TOO_DEAD && pts[j].dead > TOO_DEAD {
+        return 1;
+    }
+    let dist = atob.norm();
+    let diff = atob.normalize();
+    let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
+    if pts[i].dead > TOO_DEAD {
+        sender.send((j, -magdiff * -AVOID_K));
+    } else if pts[j].dead > TOO_DEAD {
+        sender.send((i, magdiff * -AVOID_K));
+    } else {
+        sender.send((i, magdiff * -AVOID_K / 2.0));
+        sender.send((j, -magdiff * -AVOID_K / 2.0));
+    }
+    return 1;
+}
+
+
+fn push_two(pts: &Vec<Node>, i: usize, j: usize, vels: &mut Vec<Vec3<f32>>) -> usize {
+    if j == i || pts[i].left == j || pts[i].right == j {
+        return 0;
+    }
+    let atob = pts[j].pos - pts[i].pos;
+    let sqdist = atob.sqnorm();
+    if sqdist > PUSH_DIST_SQ {
+        return if sqdist < CLOSE_DIST_SQ {1} else {0}
+    }
+    if pts[i].dead > TOO_DEAD && pts[j].dead > TOO_DEAD {
+        return 1;
+    }
+    let dist = atob.norm();
+    let diff = atob.normalize();
+    let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
+    if pts[i].dead > TOO_DEAD {
+        vels[j] = vels[j] - magdiff * -AVOID_K ;
+    } else if pts[j].dead > TOO_DEAD {
+        vels[i] = vels[i] + magdiff * -AVOID_K ;
+    } else {
+        vels[i] = vels[i] + magdiff * -AVOID_K / 2.0;
+        vels[j] = vels[j] - magdiff * -AVOID_K / 2.0;
+    }
+    return 1;
+}
+
+fn get_mins(pts: &[Node]) -> (f32, f32, f32) {
+    let mut minx = 0.0;
+    let mut miny = 0.0;
+    let mut minz = 0.0;
+    for pnt in pts {
+        if pnt.pos.x < minx {minx = pnt.pos.x;}
+        if pnt.pos.y < miny {miny = pnt.pos.y;}
+        if pnt.pos.z < minz {minz = pnt.pos.z;}
+    }
+    (minx, miny, minz)
+}
+
+fn make_bins(pts: &[Node], minx: f32, miny: f32, minz: f32) -> Bins {
+    let mut bins = HashMap::new();
+    for (i, &ref pnt) in pts.iter().enumerate() {
+        let pos = (
+            ((pnt.pos.x - minx) / CLOSE_DIST / 2.0).floor() as usize,
+            ((pnt.pos.y - miny) / CLOSE_DIST / 2.0).floor() as usize,
+            ((pnt.pos.z - minz) / CLOSE_DIST / 2.0).floor() as usize,
+        );
+        let val = bins.entry(pos).or_insert(vec![]);
+        val.push(i);
+    }
+    bins
+}
+
 impl Node {
-    fn new(pos: Pnt3<f32>, left: usize, right: usize) -> Node {
+    fn new(pos: Pnt3<f32>, left: usize, right: usize, trunk: bool) -> Node {
         Node {
             pos: pos,
             siblings: 2,
             age: 0,
-            trunk: true,
-            vel: Vec3::new(0.0, 0.0, 0.0),
+            trunk: trunk,
             nclose: 0,
             dead: 0,
             left: left,
@@ -88,7 +224,6 @@ impl Node {
             siblings: 2,
             age: 0,
             trunk: true,
-            vel: Vec3::new(0.0, 0.0, 0.0),
             nclose: 0,
             dead: 0,
             left: left,
@@ -105,6 +240,7 @@ pub trait DrawState {
 pub struct State {
     pub time: i32,
     pts: Vec<Node>,
+    vels: Vec<Vec3<f32>>,
     edges: Vec<Edge>,
     pub tris: Vec<Pnt3<u32>>,
 }
@@ -137,6 +273,7 @@ impl State {
         State{
             time: 0,
             pts: vec![],
+            vels: vec![],
             edges: vec![],
             tris: vec![],
         }
@@ -183,8 +320,11 @@ impl State {
 
         let n0 = self.pts.len();
         self.pts.push(Node::radial(0.0, rad * 2.0, n0 + 1, n0 + 2, x, z));
+        self.vels.push(Vec3::new(0.0, 0.0, 0.0));
         self.pts.push(Node::radial(f32::consts::PI / 3.0 * 2.0, rad, n0 + 2, n0 + 0, x, z));
+        self.vels.push(Vec3::new(0.0, 0.0, 0.0));
         self.pts.push(Node::radial(f32::consts::PI / 3.0 * 4.0, rad, n0 + 0, n0 + 1, x, z));
+        self.vels.push(Vec3::new(0.0, 0.0, 0.0));
 
         self.tris.push(Pnt3::new(n0 as u32, n0 as u32 + 1, n0 as u32 + 2));
 
@@ -227,7 +367,7 @@ impl State {
     pub fn tick(&mut self) {
         self.time += 1;
         self.adjust();
-        self.push_away();
+        self.push_multi();
         self.edge_grow();
         self.edge_split();
         self.move_things();
@@ -242,8 +382,8 @@ impl State {
             self.edges[i].curlen = mag;
             let diff = (p2 - p1).normalize();
             let mdiff = diff * (len - mag) / 2.0 * -STICK_K;
-            self.pts[a].vel = self.pts[a].vel + mdiff;
-            self.pts[b].vel = self.pts[b].vel - mdiff;
+            self.vels[a] = self.vels[a] + mdiff;
+            self.vels[b] = self.vels[b] - mdiff;
         }
     }
 
@@ -267,38 +407,53 @@ impl State {
         }
     }
 
-    fn make_bins(&mut self, minx: f32, miny: f32, minz: f32) -> HashMap<(usize, usize, usize), Vec<usize>> {
-        let mut bins = HashMap::new();
-        for i in 0..self.pts.len() {
-            let Pnt3{x, y, z} = self.pts[i].pos;
-            let pos = (
-                ((x - minx) / CLOSE_DIST / 2.0).floor() as usize,
-                ((y - miny) / CLOSE_DIST / 2.0).floor() as usize,
-                ((z - minz) / CLOSE_DIST / 2.0).floor() as usize,
-            );
-            let val = bins.entry(pos).or_insert(vec![]);
-            val.push(i);
+    fn push_multi(&mut self) {
+        if self.pts.len() < 40 {
+            return self.push_away();
         }
-        bins
-    }
+        let num_chunks = 10;
+        let (minx, miny, minz) = get_mins(&self.pts);
+        let bins = make_bins(&self.pts, minx, miny, minz);
+        let parts = self.pts.len() / num_chunks;
+        let (sender, receiver) = mpsc::channel();
+        let (close_sender, close_receiver) = mpsc::channel();
+        let chunk = self.pts.len() / num_chunks;
+        let len = self.pts.len();
+        // throw away the safety... so we can escape lifetime checking, which *we* know is safe,
+        // but the checker doesn't understand.
+        // It's **only** safe b/c we make sure all threads have joined before this function
+        // returns, by iterating on the receiver, which will only terminate once all `sender`s have
+        // been dropped.
+        let ptsref = unsafe {mem::transmute(&self.pts)};
+        let binsref = unsafe {mem::transmute(&bins)};
+        for i in 0..num_chunks {
+            let sender = sender.clone();
+            let close_sender = close_sender.clone();
+            thread::spawn(move || {
+                let max = if i == num_chunks - 1 {len} else {(i + 1) * chunk};
+                for z in i*chunk..max {
+                    calc_one((minx, miny, minz), ptsref, z, binsref, &sender, &close_sender);
+                }
+            });
+        }
 
-    fn get_mins(&mut self) -> (f32, f32, f32) {
-        let mut minx = 0.0;
-        let mut miny = 0.0;
-        let mut minz = 0.0;
-        for pnt in self.pts.iter() {
-            if pnt.pos.x < minx {minx = pnt.pos.x;}
-            if pnt.pos.y < miny {miny = pnt.pos.y;}
-            if pnt.pos.z < minz {minz = pnt.pos.z;}
+        // if we don't do this, everything will hang :)
+        drop(sender);
+        drop(close_sender);
+        for (i, vel) in receiver {
+            self.vels[i] = self.vels[i] + vel;
         }
-        (minx, miny, minz)
+        // we only start reading these once we *know* that all threads are done
+        for (i, close) in close_receiver {
+            self.pts[i].nclose = close;
+        }
     }
 
     fn push_away(&mut self) {
-        let (minx, miny, minz) = self.get_mins();
-        let bins = self.make_bins(minx, miny, minz);
-        //println!("Min {} {} {}", minx, miny, minz);
-        //println!("Bin: {:?}", bins);
+        let (minx, miny, minz) = get_mins(&self.pts);
+        let bins = make_bins(&self.pts, minx, miny, minz);
+        // TODO I'm double-calculating all of this... I need to remove it, but also still calculate
+        // nclose correctly.
         for i in 0..self.pts.len() {
             let mut close: usize = 0;
             let Pnt3{x, y, z} = self.pts[i].pos;
@@ -338,32 +493,6 @@ impl State {
         }
     }
 
-    fn push_two(&mut self, i: usize, j: usize) -> usize {
-        if j == i || self.pts[i].left == j || self.pts[i].right == j {
-            return 0;
-        }
-        let atob = self.pts[j].pos - self.pts[i].pos;
-        let sqdist = atob.sqnorm();
-        if sqdist > PUSH_DIST_SQ {
-            return if sqdist < CLOSE_DIST_SQ {1} else {0}
-        }
-        if self.pts[i].dead > TOO_DEAD && self.pts[j].dead > TOO_DEAD {
-            return 1;
-        }
-        let dist = atob.norm();
-        let diff = atob.normalize();
-        let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
-        if self.pts[i].dead > TOO_DEAD {
-            self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K ;
-        } else if self.pts[j].dead > TOO_DEAD {
-            self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K ;
-        } else {
-            self.pts[i].vel = self.pts[i].vel + magdiff * -AVOID_K / 2.0;
-            self.pts[j].vel = self.pts[j].vel - magdiff * -AVOID_K / 2.0;
-        }
-        return 1;
-    }
-
     fn edge_split(&mut self) {
         let len = self.edges.len();
         for i in 0..len {
@@ -376,17 +505,8 @@ impl State {
             let ob = self.edges[i].b;
             let trunk = self.pts[a].trunk || self.pts[b].trunk;
             self.edges[i].age = 0;
-            self.pts.push(Node{
-                pos: npos,
-                age: 0,
-                siblings: 2,
-                vel: Vec3::new(0.0, 0.0, 0.0),
-                nclose: 0,
-                dead: 0,
-                trunk: trunk,
-                left: self.edges[i].a,
-                right: ob,
-            });
+            self.pts.push(Node::new(npos, self.edges[i].a, ob, trunk));
+            self.vels.push(Vec3::new(0.0, 0.0, 0.0));
             self.tris.push(Pnt3::new(npt as u32, a as u32, b as u32));
             self.pts[a].siblings += 1;
             self.pts[b].siblings += 1;
@@ -419,15 +539,15 @@ impl State {
                     self.pts[i].trunk = false;
                 }
                 if self.pts[i].trunk {
-                    self.pts[i].vel.y += GRAVITY;
+                    self.vels[i].y += GRAVITY;
                 } /* BUSHY else if self.pts[i].pos.y > GRAV_BOTTOM {
                     self.pts[i].vel.y -= GRAVITY / 4.0;// * (GRAV_TOP - self.pts[i].pos.y) / GRAV_TOP;
                 } */
             } else {
-                self.pts[i].vel.y = 0.0;
+                self.vels[i].y = 0.0;
             }
-            self.pts[i].vel = self.pts[i].vel * DAMP;
-            self.pts[i].pos = self.pts[i].pos + self.pts[i].vel;
+            self.vels[i] = self.vels[i] * DAMP;
+            self.pts[i].pos = self.pts[i].pos + self.vels[i];
             self.pts[i].age += 1;
         }
     }
