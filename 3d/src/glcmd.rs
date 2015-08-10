@@ -184,10 +184,10 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
         }
         if state.time == max_time {
             println!("Output");
-            util::write_out(&state, outfile.clone());
+            util::write_out(state.clone(), outfile.clone());
             state.time += 1;
         } else if state.time % 50 == 0 {
-            util::write_out(&state, outfile.clone() + ".tmp");
+            util::write_out(state.clone(), outfile.clone() + ".tmp");
             let diff = time::get_time() - start;
             println!("At {} : {}", state.time, diff);
         }

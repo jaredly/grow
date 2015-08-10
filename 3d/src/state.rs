@@ -28,7 +28,7 @@ const GRAVITY: f32 = 0.01;
 const GRAV_TOP: f32 = 10.0;
 const GRAV_BOTTOM: f32 = 8.0;
 
-#[derive(RustcEncodable, RustcDecodable, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, PartialEq, Clone)]
 struct Edge {
     pub a: usize,
     pub b: usize,
@@ -37,7 +37,7 @@ struct Edge {
     curlen: f32,
 }
 
-#[derive(RustcEncodable, RustcDecodable, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, PartialEq, Clone)]
 struct Node {
     pos: Pnt3<f32>,
     nclose: usize,
@@ -236,7 +236,7 @@ pub trait DrawState {
     fn draw_state(&mut self, state: &mut State, off: f32);
 }
 
-#[derive(RustcEncodable, RustcDecodable, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, PartialEq, Clone)]
 pub struct State {
     pub time: i32,
     pts: Vec<Node>,

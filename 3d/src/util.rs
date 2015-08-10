@@ -2,6 +2,7 @@ extern crate bincode;
 use state::{State};
 use std::fs::File;
 use bincode::SizeLimit;
+use std::thread;
 
 pub fn load_maybe(infile: Option<String>, num: usize) -> State {
     match infile {
@@ -10,9 +11,12 @@ pub fn load_maybe(infile: Option<String>, num: usize) -> State {
     }
 }
 
-pub fn write_out(state: &State, outfile: String) {
-    let mut out = File::create(outfile.clone()).ok().expect(&format!("Can't write to {}", outfile));
-    bincode::encode_into(&state, &mut out, SizeLimit::Infinite).ok().expect("Failed to encode state")
+pub fn write_out(state: State, outfile: String) {
+    thread::spawn(move || {
+        let mut out = File::create(outfile.clone()).ok().expect(&format!("Can't write to {}", outfile));
+        bincode::encode_into(&state, &mut out, SizeLimit::Infinite).ok().expect("Failed to encode state");
+        println!("Writted");
+    });
 }
 
 pub fn load_state(fname: String) -> State {

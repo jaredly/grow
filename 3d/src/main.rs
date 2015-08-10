@@ -75,13 +75,13 @@ fn make(max_time: i32, outfile: String, infile: Option<String>) {
     for i in state.time..max_time {
         state.tick();
         if i % 50 == 0 {
-            util::write_out(&state, outfile.clone() + ".tmp");
+            util::write_out(state.clone(), outfile.clone() + ".tmp");
             let diff = time::get_time() - start;
             println!("At {} : {}", i, diff);
         }
     }
     println!("Output");
-    util::write_out(&state, outfile.clone());
+    util::write_out(state.clone(), outfile.clone());
 }
 
 fn info(infile: String) {
