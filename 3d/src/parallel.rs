@@ -2,6 +2,34 @@ use std::mem::transmute;
 use std::sync::mpsc;
 use std::thread;
 use std::slice;
+use std::sync::mpsc::{Sender, Receiver};
+use std::mem;
+
+/* I don't know how to get lifetimes working here... :/
+
+pub fn parallel_full<Data: 'static + Sync, Msg1: Send, Msg2: Send> (data: &Data, parallelism: usize, work: fn(usize, &Data, (&Sender<Msg1>, &Sender<Msg2>)), finish: fn((&Receiver<Msg1>, &Receiver<Msg2>))) {
+
+    let (sender, receiver) = mpsc::channel();
+    let (close_sender, close_receiver) = mpsc::channel();
+    // TODO make data's lifetime work... as in, be the same as the 
+    // let data = unsafe {mem::transmute(data)};
+    let data: &Data = unsafe {mem::transmute(data)};
+    for i in 0..parallelism {
+        let sender = sender.clone();
+        let close_sender = close_sender.clone();
+        thread::spawn(move || {
+            //let data: &Data = unsafe {mem::transmute(data)};
+            work(i, data, (&sender, &close_sender));
+        });
+    }
+
+    // if we don't do this, everything will hang :)
+    drop(sender);
+    drop(close_sender);
+    finish((&receiver, &close_receiver));
+
+}
+*/
 
 /// Run a function in parallel over chunks of an array.
 pub fn parallel<'data, Data: Send> (data: &'data mut [Data], parallelism: usize, work: fn(usize, usize, &mut [Data])) {

@@ -12,6 +12,7 @@ use std::cell::RefCell;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::fs::File;
+use std::io::prelude::*;
 
 use image::ImageBuffer;
 use na::{Pnt3, Vec2};
@@ -71,8 +72,8 @@ pub fn shoot_one(window: &mut Window, infile: String, at: Pnt3<f32>, target: Pnt
     let vertices = state.coords();
     let indices = state.tris.clone();
     let texture_idx = state.coord_colors(0.0);
-    let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
-    let material   = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::default()) as Box<Material + 'static>));
+    let mesh = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
+    let material = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::default()) as Box<Material + 'static>));
     let mut obj = window.add_mesh(mesh, na::one());
     obj.set_color(0.0, 1.0, 0.0);
     obj.enable_backface_culling(false);
@@ -162,16 +163,22 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
                 for i in 0..current.len() {
                     current[i] = vertices[i];
                 }
-                let _: Vec<usize> = vertices[current.len()..].iter().map(|i| {current.push(*i); 0usize}).collect();
+                for i in vertices[current.len()..].iter() {
+                    current.push(*i);
+                }
             });
             obj.modify_faces(&mut move |current| {
-                let _: Vec<usize> = indices[current.len()..].iter().map(|i| {current.push(*i); 0usize}).collect();
+                for i in indices[current.len()..].iter() {
+                    current.push(*i);
+                }
             });
             obj.modify_uvs(&mut move |current| {
                 for i in 0..current.len() {
                     current[i] = texture_idx[i];
                 }
-                let _: Vec<usize> = texture_idx[current.len()..].iter().map(|i| {current.push(*i); 0usize}).collect();
+                for i in texture_idx[current.len()..].iter() {
+                    current.push(*i);
+                }
             });
 
             // move camera
@@ -179,8 +186,9 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
             camera.set_dist(dist + 0.03);
             let yaw = camera.yaw();
             camera.set_yaw(yaw + 0.002);
-            let at = camera.at_mut();
+            let mut at = camera.at().clone();
             at.y += 0.010;
+            camera.set_at(at);
         }
         if state.time == max_time {
             println!("Output");
@@ -191,19 +199,28 @@ pub fn grow(window: &mut Window, max_time: i32, outfile: String, infile: Option<
             let diff = time::get_time() - start;
             println!("At {} : {}", state.time, diff);
         }
-        // window.draw_state(&mut state, 180.0);
     }
+}
+
+fn read_file(path: &str) -> String {
+    let mut text = String::new();
+    let mut file = File::open(path).ok().expect("File didn't exust");
+    file.read_to_string(&mut text).ok().expect("Couldn't read file");
+    text
 }
 
 pub fn display(window: &mut Window, infile: String, hollow: bool) {
     let mut state = util::load_state(infile);
     let mut camera = ArcBall::new(Pnt3::new(0.0f32, 20.0, -50.0), na::orig());
 
+    let vertex = read_file("./vertex.shade");
+    let fragment = read_file("./fragment.shade");
+
     let vertices = state.coords();
     let indices = state.tris.clone();
     let texture_idx = state.coord_colors(0.0);
-    let mesh  = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
-    let material   = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::default()) as Box<Material + 'static>));
+    let mesh = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
+    let material = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::new(&vertex, &fragment)) as Box<Material + 'static>));
     if !hollow {
         let mut obj = window.add_mesh(mesh, na::one());
         obj.set_color(0.0, 1.0, 0.0);

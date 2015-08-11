@@ -1,0 +1,6 @@
+#version 120
+varying vec3 uv_as_a_color;
+varying float opacity;
+void main() {
+    gl_FragColor = vec4(uv_as_a_color, opacity);
+}
