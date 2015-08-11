@@ -7,6 +7,7 @@ extern crate gl;
 extern crate time;
 extern crate image;
 extern crate glfw;
+extern crate notify;
 
 mod state;
 mod util;
@@ -35,7 +36,7 @@ Usage:
   grow shoot <infile> <x> <y> <z> <tx> <ty> <tz>
   grow once
   grow info <infile>
-  grow display <infile> [--hollow]
+  grow display <infile> [--hollow] [--still]
   grow (-h | --help)
   grow --version
 
@@ -53,6 +54,7 @@ struct Args {
     flag_start: Option<String>,
     flag_hollow: bool,
     flag_record: bool,
+    flag_still: bool,
     arg_x: Option<f32>,
     arg_y: Option<f32>,
     arg_z: Option<f32>,
@@ -145,7 +147,7 @@ fn main() {
     } else if args.cmd_draw {
         drawcmd::draw(&mut window, args.arg_infile.unwrap(), args.arg_outfile.unwrap());
     } else if args.cmd_display {
-        glcmd::display(&mut window, args.arg_infile.unwrap(), args.flag_hollow);
+        glcmd::display(&mut window, args.arg_infile.unwrap(), args.flag_hollow, args.flag_still);
     } else {
         glcmd::grow(&mut window, args.arg_maxtime.unwrap(), args.arg_outfile.unwrap(), args.flag_start, args.flag_hollow, args.flag_record);
     }

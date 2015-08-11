@@ -3,6 +3,7 @@ extern crate kiss3d;
 extern crate time;
 extern crate glfw;
 extern crate image;
+extern crate notify;
 
 use shaded;
 use util;
@@ -10,9 +11,11 @@ use util;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::sync::mpsc;
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{channel, Sender, Receiver};
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
+use notify::Watcher;
 
 use image::ImageBuffer;
 use na::{Pnt3, Vec2};
@@ -209,9 +212,20 @@ fn read_file(path: &str) -> String {
     text
 }
 
-pub fn display(window: &mut Window, infile: String, hollow: bool) {
+fn check_ext(rx: &Receiver<notify::Event>, test_ext: &str) -> bool {
+    if let Ok(ev) = rx.try_recv() {
+        if let Some(path) = ev.path {
+            if let Some(ext) = path.extension() {
+                return ext == test_ext;
+            }
+        }
+    }
+    false
+}
+
+pub fn display(window: &mut Window, infile: String, hollow: bool, still: bool) {
     let mut state = util::load_state(infile);
-    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 20.0, -50.0), na::orig());
+    let mut camera = ArcBall::new(Pnt3::new(0.0f32, 20.0, -50.0), Pnt3::new(0.0, 10.0, 0.0));
 
     let vertex = read_file("./vertex.shade");
     let fragment = read_file("./fragment.shade");
@@ -221,7 +235,7 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
     let texture_idx = state.coord_colors(0.0);
     let mesh = Rc::new(RefCell::new(Mesh::new(vertices, indices, None, Some(texture_idx), false)));
     let material = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::new(&vertex, &fragment)) as Box<Material + 'static>));
-    if !hollow {
+    //if !hollow {
         let mut obj = window.add_mesh(mesh, na::one());
         obj.set_color(0.0, 1.0, 0.0);
         obj.enable_backface_culling(false);
@@ -231,8 +245,13 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
 
         //obj.set_texture_from_file(&Path::new("media/kitten.png"), "kitten");
         obj.set_material(material);
-    }
+    //}
 
+    let (tx, rx) = channel();
+    let mut w: notify::RecommendedWatcher = notify::Watcher::new(tx).ok().expect("failed to create a watcher");
+    w.watch(".").unwrap();
+
+    let mut running = !still;
     let mut off = 0.0;
     while window.render_with_camera(&mut camera) {
         off = (off + 0.1) % 360.0;
@@ -240,8 +259,37 @@ pub fn display(window: &mut Window, infile: String, hollow: bool) {
         if hollow {
             window.draw_state(&mut state, 180.0);
         }
-        let yaw = camera.yaw();
-        camera.set_yaw(yaw + 0.004);
+        if running {
+            let yaw = camera.yaw();
+            camera.set_yaw(yaw + 0.004);
+        }
+
+        if check_ext(&rx, "shade") {
+            let vertex = read_file("./vertex.shade");
+            let fragment = read_file("./fragment.shade");
+            let material = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::new(&vertex, &fragment)) as Box<Material + 'static>));
+            obj.set_material(material);
+        }
+
+        for event in window.events().iter() {
+            match event.value {
+                WindowEvent::Key(code, _, Action::Press, _) => {
+                    match code {
+                        Key::L => {
+                            let vertex = read_file("./vertex.shade");
+                            let fragment = read_file("./fragment.shade");
+                            let material = Rc::new(RefCell::new(Box::new(shaded::ShaderMaterial::new(&vertex, &fragment)) as Box<Material + 'static>));
+                            obj.set_material(material);
+                        },
+                        Key::P => {
+                            running = !running;
+                        },
+                        _ => {}
+                    }
+                },
+                _ => {}
+            }
+        }
     }
 }
 
