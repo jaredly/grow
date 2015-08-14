@@ -2,8 +2,6 @@ use std::mem::transmute;
 use std::sync::mpsc;
 use std::thread;
 use std::slice;
-use std::sync::mpsc::{Sender, Receiver};
-use std::mem;
 
 /* I don't know how to get lifetimes working here... :/
 

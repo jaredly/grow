@@ -7,7 +7,7 @@ use kiss3d::resource::Material;
 use kiss3d::scene::ObjectData;
 use kiss3d::light::Light;
 use kiss3d::camera::Camera;
-use kiss3d::resource::{Mesh, Shader, ShaderAttribute, ShaderUniform};
+use kiss3d::resource::{Mesh, Shader, ShaderAttribute, ShaderUniform, GLPrimitive};
 
 #[path = "./error.rs"]
 mod error;
@@ -15,13 +15,56 @@ mod error;
 /// A material that draws normals of an object.
 pub struct ShaderMaterial {
     shader:    Shader,
-    position:  ShaderAttribute<Pnt3<f32>>,
-    uvs:       ShaderAttribute<Pnt2<f32>>,
-    view:      ShaderUniform<Mat4<f32>>,
-    transform: ShaderUniform<Mat4<f32>>,
-    scale:     ShaderUniform<Mat3<f32>>,
-    //time:      ShaderUniform<f32>,
+    position:  Option<ShaderAttribute<Pnt3<f32>>>,
+    normal:  Option<ShaderAttribute<Vec3<f32>>>,
+    uvs:       Option<ShaderAttribute<Pnt2<f32>>>,
+    view:      Option<ShaderUniform<Mat4<f32>>>,
+    transform: Option<ShaderUniform<Mat4<f32>>>,
+    scale:     Option<ShaderUniform<Mat3<f32>>>,
+    time:      Option<ShaderUniform<f32>>,
     time_local: i32,
+}
+
+trait MaybeEnable<T> {
+    fn enable(&mut self);
+    fn disable(&mut self);
+}
+
+impl<T: GLPrimitive> MaybeEnable<T> for Option<ShaderAttribute<T>> {
+    fn enable(&mut self) {
+        if let Some(ref mut var) = *self {
+            var.enable();
+        }
+    }
+    fn disable(&mut self) {
+        if let Some(ref mut var) = *self {
+            var.disable();
+        }
+    }
+}
+
+trait MaybeUpload<T> {
+    fn upload(&mut self, &T);
+}
+
+impl<T: GLPrimitive> MaybeUpload<T> for Option<ShaderUniform<T>> {
+    fn upload(&mut self, data: &T) {
+        if let Some(ref mut var) = *self {
+            var.upload(data);
+        }
+    }
+}
+
+fn maybe_endable<T: GLPrimitive>(val: &mut Option<ShaderAttribute<T>>) {
+    if let Some(ref mut var) = *val {
+        var.enable();
+    }
+}
+
+fn maybe_upload(val: &mut Option<ShaderUniform<Mat4<f32>>>, data: &Mat4<f32>) {
+    if let Some(ref mut var) = *val {
+        var.upload(data);
+    }
 }
 
 impl ShaderMaterial {
@@ -29,15 +72,18 @@ impl ShaderMaterial {
     pub fn new(vertex_src: &str, fragment_src: &str) -> ShaderMaterial {
         let mut shader = Shader::new_from_str(vertex_src, fragment_src);
 
+        println!("New shader");
         shader.use_program();
+        println!("Used");
 
         ShaderMaterial {
-            position:  shader.get_attrib("position").unwrap(),
-            uvs:       shader.get_attrib("uvs").unwrap(),
-            transform: shader.get_uniform("transform").unwrap(),
-            scale:     shader.get_uniform("scale").unwrap(),
-            view:      shader.get_uniform("view").unwrap(),
-            //time:      shader.get_uniform("time").unwrap(),
+            position:  shader.get_attrib("position"),
+            normal:  shader.get_attrib("normal"),
+            uvs:       shader.get_attrib("uvs"),
+            transform: shader.get_uniform("transform"),
+            scale:     shader.get_uniform("scale"),
+            view:      shader.get_uniform("view"),
+            time:      shader.get_uniform("time"),
             time_local:0,
             shader:    shader
         }
@@ -78,7 +124,10 @@ impl Material for ShaderMaterial {
 
 
         self.shader.use_program();
+
+        // Attributes
         self.position.enable();
+        self.normal.enable();
         self.uvs.enable();
 
         /*
@@ -86,7 +135,9 @@ impl Material for ShaderMaterial {
          * Setup camera and light.
          *
          */
-        camera.upload(pass, &mut self.view);
+        if let Some(ref mut view) = self.view {
+            camera.upload(pass, view);
+        }
 
         /*
          *
@@ -97,13 +148,21 @@ impl Material for ShaderMaterial {
         // FIXME: add a function `na::diagonal(scale)` to nalgebra.
         let formated_scale:     Mat3<f32> = Mat3::new(scale.x, 0.0, 0.0, 0.0, scale.y, 0.0, 0.0, 0.0, scale.z);
 
+        // Uniforms
         self.transform.upload(&formated_transform);
         self.scale.upload(&formated_scale);
         self.inc_time();
-        //self.time.upload(&(self.time_local as f32));
+        self.time.upload(&(self.time_local as f32));
 
-        mesh.bind_coords(&mut self.position);
-        mesh.bind_uvs(&mut self.uvs);
+        if let Some(ref mut position) = self.position {
+            mesh.bind_coords(position);
+        }
+        if let Some(ref mut normal) = self.normal {
+            mesh.bind_normals(normal);
+        }
+        if let Some(ref mut uvs) = self.uvs {
+            mesh.bind_uvs(uvs);
+        }
         mesh.bind_faces();
 
         unsafe {
@@ -116,6 +175,7 @@ impl Material for ShaderMaterial {
         mesh.unbind();
 
         self.position.disable();
+        self.normal.disable();
         self.uvs.disable();
     }
 }

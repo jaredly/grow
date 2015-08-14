@@ -1,6 +1,22 @@
 #version 120
+uniform vec3 ambient;
+uniform vec3 lightDirection;
+
+varying vec3 vnormal;
 varying vec3 uv_as_a_color;
 varying float opacity;
+
+vec3 reflectedLight(
+    vec3 normal,
+    vec3 lightDirection,
+    vec3 ambient,
+    vec3 diffuse
+    ) {
+  float brightness = dot(normalize(normal), normalize(lightDirection));
+  return ambient + diffuse * max(brightness, 0.0);
+}
+
 void main() {
+    // vec3 light = reflectedLight(vnormal, lightDirection, ambient, uv_as_a_color);
     gl_FragColor = vec4(uv_as_a_color, opacity);
 }

@@ -118,7 +118,7 @@ fn calc_one((minx, miny, minz): (f32, f32, f32), pts: &Vec<Node>, i: usize, bins
     if nz != zn {
         check_bin_mm!(bins, &(xn, yn, nz), pts, sender, i, close);
     }
-    close_sender.send((i, close));
+    close_sender.send((i, close)).ok().expect("Failed to send close count");
 }
 
 fn push_two_mm(pts: &Vec<Node>, i: usize, j: usize, sender: &mpsc::Sender<(usize, Vec3<f32>)>) -> usize {
@@ -137,12 +137,12 @@ fn push_two_mm(pts: &Vec<Node>, i: usize, j: usize, sender: &mpsc::Sender<(usize
     let diff = atob.normalize();
     let magdiff = diff * (PUSH_DIST - dist); // / 2.0;
     if pts[i].dead > TOO_DEAD {
-        sender.send((j, -magdiff * -AVOID_K));
+        sender.send((j, -magdiff * -AVOID_K)).ok().expect("Failed to send j diff");
     } else if pts[j].dead > TOO_DEAD {
-        sender.send((i, magdiff * -AVOID_K));
+        sender.send((i, magdiff * -AVOID_K)).ok().expect("Failed to send i diff");
     } else {
-        sender.send((i, magdiff * -AVOID_K / 2.0));
-        sender.send((j, -magdiff * -AVOID_K / 2.0));
+        sender.send((i, magdiff * -AVOID_K / 2.0)).ok().expect("Failed to send i diff");
+        sender.send((j, -magdiff * -AVOID_K / 2.0)).ok().expect("Failed to send j diff");
     }
     return 1;
 }
@@ -414,7 +414,6 @@ impl State {
         let num_chunks = 10;
         let (minx, miny, minz) = get_mins(&self.pts);
         let bins = make_bins(&self.pts, minx, miny, minz);
-        let parts = self.pts.len() / num_chunks;
         let (sender, receiver) = mpsc::channel();
         let (close_sender, close_receiver) = mpsc::channel();
         let chunk = self.pts.len() / num_chunks;

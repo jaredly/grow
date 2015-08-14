@@ -14,7 +14,6 @@ use std::sync::mpsc;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
 use notify::Watcher;
 
 use image::ImageBuffer;
@@ -69,7 +68,7 @@ fn vflip(vec: &mut [u8], width: usize, height: usize) {
 }
 
 pub fn shoot_one(window: &mut Window, infile: String, at: Pnt3<f32>, target: Pnt3<f32>) {
-    let mut state = util::load_state(infile.clone());
+    let state = util::load_state(infile.clone());
     let mut camera = ArcBall::new(at, target);
 
     let vertices = state.coords();

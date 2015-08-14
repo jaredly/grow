@@ -1,10 +1,31 @@
 #version 120
+
+/*
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+uniform mat4 inverseModel;
+uniform mat4 inverseView;
+uniform mat4 inverseProjection;
+
+uniform vec3 ambient;
+uniform vec3 diffuse;
+uniform vec3 lightDirection;
+
+varying vec3 vnormal;
+*/
+
 attribute vec3 position;
+attribute vec3 normal;
 attribute vec3 uvs;
+
 uniform float time;
 uniform mat4 view;
 uniform mat4 transform;
 uniform mat3 scale;
+
+varying vec3 vnormal;
 varying vec3 uv_as_a_color;
 varying float opacity;
 
@@ -15,42 +36,47 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    // float vtime = sin(time / 25.0) * 0.4 + 0.5;
-    float m = uvs.x;
-    uv_as_a_color = hsv2rgb(vec3(0.2, 0.7, 0.5));
-    opacity = 0.8;
-    if (uvs.y == 0) {
-        if (uvs.x < 0.9) {
-            opacity = 0.1;
-        }
-        else {
-            opacity = 0.4;
-        }
-        // opacity = 1.0 - (uvs.x * 0.8);
-    }
-
-	/*
-    if (uvs.y == 0) {
-        if (uvs.x > 0.9) {
-            uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 + (uvs.x - 0.9) * 2));
-        } else {
-            uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
-        }
-        opacity = 0.8;
-    } else if (uvs.x > 0.5) {
-        uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
-        opacity = 0.8;
-    } else if (uvs.x > 0.4) {
-        float diff = (uvs.x - 0.4) * 10.0;
-        uv_as_a_color = hsv2rgb(vec3((0.33 - 0.075) * diff + 0.075, (1.0 - 0.68) * diff + 0.68, 0.5 * uvs.x));
-        opacity = 0.8;
-    } else {
-        uv_as_a_color = hsv2rgb(vec3(0.075, 0.68, 0.5 * uvs.x + 0.15));
-        opacity = 0.9;
-    }
-	*/
-    // uv_as_a_color  = vec3(uvs.y * 0.6, 1.0 - uvs.y * 0.6, uvs.y * .2);
-    // uv_as_a_color  = vec3(uvs.x, 0.1, uvs.x / 2.0 + 0.5);
+    uv_as_a_color = hsv2rgb(vec3(0.0, 0.7, 0.5));
+    opacity = 0.9;
     gl_Position = view * transform * mat4(scale) * vec4(position, 1.0);
+
+    // gl_Position = projection * view * model * vec4(position, 1);
+    // vec4 worldNormal = vec4(normal, 0.0) * inverseModel * inverseView;
+    // vnormal = worldNormal.xyz;
 }
 
+// float vtime = sin(time / 25.0) * 0.4 + 0.5;
+/*
+opacity = 0.8;
+if (uvs.y == 0) {
+    if (uvs.x < 0.9) {
+        opacity = 0.1;
+    }
+    else {
+        opacity = 0.4;
+    }
+    // opacity = 1.0 - (uvs.x * 0.8);
+}
+
+// real thing
+if (uvs.y == 0) {
+    if (uvs.x > 0.9) {
+        uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 + (uvs.x - 0.9) * 2));
+    } else {
+        uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
+    }
+    opacity = 0.8;
+} else if (uvs.x > 0.5) {
+    uv_as_a_color = hsv2rgb(vec3(0.33, 1.0, 0.5 * uvs.x));
+    opacity = 0.8;
+} else if (uvs.x > 0.4) {
+    float diff = (uvs.x - 0.4) * 10.0;
+    uv_as_a_color = hsv2rgb(vec3((0.33 - 0.075) * diff + 0.075, (1.0 - 0.68) * diff + 0.68, 0.5 * uvs.x));
+    opacity = 0.8;
+} else {
+    uv_as_a_color = hsv2rgb(vec3(0.075, 0.68, 0.5 * uvs.x + 0.15));
+    opacity = 0.9;
+}
+*/
+// uv_as_a_color  = vec3(uvs.y * 0.6, 1.0 - uvs.y * 0.6, uvs.y * .2);
+// uv_as_a_color  = vec3(uvs.x, 0.1, uvs.x / 2.0 + 0.5);
